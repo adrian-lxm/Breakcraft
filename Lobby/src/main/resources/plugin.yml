@@ -1,0 +1,7 @@
+name: Breakcraft-Lobby
+version: 1.0
+main: de.breakcraft.lobby.Main
+commands:
+  forcedSpawn:
+  servernpc:
+depend: [LuckPerms]
