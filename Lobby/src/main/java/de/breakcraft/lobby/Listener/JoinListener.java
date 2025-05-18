@@ -1,10 +1,11 @@
 package de.breakcraft.lobby.Listener;
 
 
-import de.breakcraft.lobby.Main;
+import de.breakcraft.lobby.LobbyPlugin;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.cacheddata.CachedMetaData;
+import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.types.InheritanceNode;
 import org.bukkit.Bukkit;
@@ -18,6 +19,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
 
+import java.util.Optional;
+
 public class JoinListener implements Listener {
     private Scoreboard prefixManager;
 
@@ -25,37 +28,31 @@ public class JoinListener implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
+        for(String s : p.getListeningPluginChannels())
+            System.out.println(s + " - ");
+
         if(prefixManager == null) prefixManager = Bukkit.getScoreboardManager().getNewScoreboard();
 
-        Object spawn = Main.getInstance().getConfig().get("forced-spawn");
+        Object spawn = LobbyPlugin.getInstance().getConfig().get("forced-spawn");
         if(spawn != null) {
             Location forcedSpawn = (Location) spawn;
             p.teleport(forcedSpawn);
         }
-        p.getInventory().setItem(0, Main.getCompassItem());
+        p.getInventory().setItem(0, LobbyPlugin.getCompassItem());
 
         LuckPerms luckPerms = LuckPermsProvider.get();
         luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAcceptAsync((user -> {
-            CachedMetaData metaData = user.getCachedData().getMetaData();
-            String prefix = metaData.getPrefix() != null ? metaData.getPrefix().replace('&', '§') : "";
+            String prefix;
+            System.out.println(user.getPrimaryGroup());
+            Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();
+            prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
-            boolean inGroup = user.getNodes().stream()
-                            .filter(n -> n instanceof InheritanceNode)
-                            .map(n -> ((InheritanceNode) n).getGroupName())
-                            .anyMatch(groupName -> groupName.equalsIgnoreCase("spieler"));
-
-            if(!inGroup) {
-                InheritanceNode spielerNode = InheritanceNode.builder("spieler").build();
-                user.data().add(spielerNode);
-                luckPerms.getUserManager().saveUser(user);
-            }
-
-            Bukkit.getScheduler().runTask(Main.getInstance(), () -> {
+            Bukkit.getScheduler().runTask(LobbyPlugin.getInstance(), () -> {
 
                 if(prefixManager.getTeam(user.getPrimaryGroup()) == null) {
                     prefixManager.registerNewTeam(user.getPrimaryGroup()).setPrefix(" " + prefix + " ");
-                    prefixManager.getTeam(user.getPrimaryGroup()).addEntry(p.getName());
                 }
+                prefixManager.getTeam(user.getPrimaryGroup()).addEntry(p.getName());
                 p.setPlayerListName(" " + prefix + " " + p.getName());
                 p.setDisplayName(" " + prefix + " " + p.getName());
 
@@ -72,7 +69,7 @@ public class JoinListener implements Listener {
                 rankDesc.setScore(3);
                 Score blank3 = objective.getScore(" ");
                 blank3.setScore(4);
-                Score players = objective.getScore("   §e0 §b/ §e1000");
+                Score players = objective.getScore("   §e0 §b/ §e100");
                 players.setScore(5);
                 Score playersDesc = objective.getScore("§bSpieler:");
                 playersDesc.setScore(6);
@@ -96,10 +93,11 @@ public class JoinListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLeave(PlayerQuitEvent e) {
         e.setQuitMessage(null);
-        e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+        e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         LuckPerms luckPerms = LuckPermsProvider.get();
         User user = luckPerms.getUserManager().getUser(e.getPlayer().getUniqueId());
-        prefixManager.getTeam(user.getPrimaryGroup()).removeEntry(e.getPlayer().getName());
+        Team team = prefixManager.getTeam(user.getPrimaryGroup());
+        if(team != null) team.removeEntry(e.getPlayer().getName());
     }
 
 }

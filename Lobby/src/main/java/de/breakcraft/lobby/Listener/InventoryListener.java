@@ -2,8 +2,9 @@ package de.breakcraft.lobby.Listener;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import de.breakcraft.lobby.Main;
+import de.breakcraft.lobby.LobbyPlugin;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,46 +16,29 @@ public class InventoryListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
-        if(e.getWhoClicked() instanceof Player) {
-            if(e.getCurrentItem() != null) {
-                if(e.getCurrentItem().isSimilar(Main.getCompassItem())) e.setCancelled(true);
-            }
-            if(e.getClickedInventory().getType() != InventoryType.CREATIVE) {
-                if(e.getClickedInventory().getTitle() != null) {
-                    if(e.getClickedInventory().getTitle().equals("§5Serverauswahl : Breakcraft")) {
-                        e.setCancelled(true);
-                        if(e.getCurrentItem() != null) {
-                            Player p = (Player) e.getWhoClicked();
-                            switch(e.getCurrentItem().getType()) {
-                                case GRASS:
-                                    ByteArrayDataOutput out = ByteStreams.newDataOutput();
-                                    out.writeUTF("Connect");
-                                    out.writeUTF("Survival");
-                                    p.sendPluginMessage(Main.getInstance(), "BungeeCord", out.toByteArray());
-                                    break;
-                                case DIAMOND_SWORD:
-                                    p.sendMessage(ChatColor.RED + "Dieser Spielmodus ist derzeit nicht verfügbar !");
-                                    p.getOpenInventory().close();
-                                    /**
-                                    ByteArrayDataOutput out2 = ByteStreams.newDataOutput();
-                                    out2.writeUTF("Connect");
-                                    out2.writeUTF("Challenges");
-                                    p.sendPluginMessage(Main.getInstance(), "BungeeCord", out2.toByteArray());
-                                     **/
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
+        if(!(e.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) e.getWhoClicked();
+
+        if(e.getCurrentItem() != null && e.getCurrentItem().isSimilar(LobbyPlugin.getCompassItem())) {
+            e.setCancelled(true);
+            return;
         }
+
+        if(e.getClickedInventory().getType() == InventoryType.CREATIVE || e.getClickedInventory() == null)
+            return;
+
+        if(!player.getOpenInventory().getTitle().equals("§5Serverauswahl : Breakcraft") || e.getCurrentItem() == null) return;
+        e.setCancelled(true);
+
+        if(e.getCurrentItem().getType() == Material.GRAY_STAINED_GLASS_PANE) return;
+        String server = e.getCurrentItem().getItemMeta().getDisplayName().substring(2);
+        LobbyPlugin.getInstance().sendPluginMessage(player, "Connect", server);
+        player.closeInventory();
     }
 
     @EventHandler
     public void onItemDrop(PlayerDropItemEvent e) {
-        if(e.getItemDrop().getItemStack().isSimilar(Main.getCompassItem())) e.setCancelled(true);
+        if(e.getItemDrop().getItemStack().isSimilar(LobbyPlugin.getCompassItem())) e.setCancelled(true);
     }
 
 }

@@ -1,6 +1,6 @@
 package de.breakcraft.lobby.Listener;
 
-import de.breakcraft.lobby.Main;
+import de.breakcraft.lobby.LobbyPlugin;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -17,8 +17,8 @@ public class HealthFoodListener implements Listener {
             e.setCancelled(true);
             if(e.getCause() == EntityDamageEvent.DamageCause.VOID) {
                 Player p = (Player) e.getEntity();
-                if(Main.getInstance().getConfig().get("forced-spawn") != null) {
-                    Location forcedSpawn = (Location) Main.getInstance().getConfig().get("forced-spawn");
+                if(LobbyPlugin.getInstance().getConfig().get("forced-spawn") != null) {
+                    Location forcedSpawn = (Location) LobbyPlugin.getInstance().getConfig().get("forced-spawn");
                     p.teleport(forcedSpawn);
                     p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 }

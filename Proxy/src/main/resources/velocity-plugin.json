@@ -1,0 +1,9 @@
+{
+  "id": "breakcraft-proxy",
+  "name": "Breakcraft-Proxy",
+  "version": "1.0-revived",
+  "authors": [
+    "DeinName"
+  ],
+  "main": "de.breakcraft.proxy.ProxyPlugin"
+}

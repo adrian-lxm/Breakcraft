@@ -2,23 +2,25 @@ package de.breakcraft.proxy;
 
 import com.google.inject.Inject;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
+import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
-import com.velocitypowered.api.plugin.PluginManager;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
-import de.breakcraft.proxy.Commands.Ban;
-import de.breakcraft.proxy.Commands.Lobby;
-import de.breakcraft.proxy.Commands.Shutdown;
-import de.breakcraft.proxy.Commands.Unban;
+import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import com.zaxxer.hikari.HikariConfig;
+import de.breakcraft.proxy.commands.Ban;
+import de.breakcraft.proxy.commands.Lobby;
+import de.breakcraft.proxy.commands.Unban;
 import de.breakcraft.proxy.db.DatabaseManager;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
-import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
-
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,11 +30,11 @@ import java.util.logging.Logger;
         id = "breakcraft-proxy",
         name = "Breakcraft-Proxy",
         version = "1.0-revived",
-        authors = {"DeinName"}
+        authors = {"adrian-lxm"}
 )
 public class ProxyPlugin {
     private static ProxyPlugin instance;
-    public static final String PREFIX = "[Breakcraft-Proxy]";
+    private final static ChannelIdentifier IDENTIFIER = MinecraftChannelIdentifier.create("breakcraft", "proxy");
 
     private final ProxyServer server;
     private final Logger logger;
@@ -65,29 +67,36 @@ public class ProxyPlugin {
                 config.node("mysql", "db-password").set("");
                 saveConfig(config);
             } catch (IOException e) {
-                logger.severe(PREFIX + " IOException was thrown! Message of error: " + e.getMessage());
+                logger.severe(" IOException was thrown! Message of error: " + e.getMessage());
                 return;
             }
             
-            logger.warning( PREFIX + " Default config file created. Plugin will not activate any functions until restart!");
+            logger.warning( " Default config file created. Plugin will not activate any functions until restart!");
             return;
         }
 
-        PluginManager pm = server.getPluginManager();
-        pm.registerListener(this, new Listeners());
-        pm.registerCommand(this, new Lobby());
-        pm.registerCommand(this, new Ban());
-        pm.registerCommand(this, new Unban());
-        pm.registerCommand(this, new Shutdown());
+        server.getChannelRegistrar().register(IDENTIFIER);
+
+        CommandManager cm = server.getCommandManager();
+        CommandMeta banMeta = cm.metaBuilder("ban").plugin(this).build();
+        CommandMeta lobbyMeta = cm.metaBuilder("lobby").plugin(this).build();
+        CommandMeta unbanMeta = cm.metaBuilder("unban").plugin(this).build();
+        cm.register(banMeta, new Ban());
+        cm.register(lobbyMeta, new Lobby());
+        cm.register(unbanMeta, new Unban());
+
+        EventManager em = server.getEventManager();
+        em.register(this, new Listeners(server));
+        em.register(this, new PluginMessagesListener(IDENTIFIER));
 
         ConfigurationNode config = getConfig().node("mysql");
-        MysqlDataSource mysqlDataSource = new MysqlDataSource();
-        mysqlDataSource.setUrl("jdbc:mysql://localhost:3306/" + config.node("db-name").getString());
-        mysqlDataSource.setUser(config.node("db-user").getString());
-        mysqlDataSource.setPassword(config.node("db-password").getString());
-        DatabaseManager.initialize(mysqlDataSource);
+        MysqlDataSource source = new MysqlDataSource();
+        source.setUrl("jdbc:mysql://localhost:3306/" + config.node("db-name").getString());
+        source.setUser(config.node("db-user").getString());
+        source.setPassword(config.node("db-password").getString());
+        DatabaseManager.initialize(source);
 
-
+        logger.info(" Plugin initialized !");
         
     }
 
@@ -105,6 +114,22 @@ public class ProxyPlugin {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static ProxyPlugin get() {
+        return instance;
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public ProxyServer getServer() {
+        return server;
+    }
+
+    public static ChannelIdentifier getIdentifier() {
+        return IDENTIFIER;
     }
 
 }
