@@ -1,2 +1,4 @@
 .idea
 /Lobby/target
+sonar-project.properties
+/Proxy/target
