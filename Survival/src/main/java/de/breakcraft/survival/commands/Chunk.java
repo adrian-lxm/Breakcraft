@@ -1,7 +1,7 @@
 package de.breakcraft.survival.commands;
 
 import de.breakcraft.survival.SurvivalPlugin;
-import de.breakcraft.survival.utils.ChunkClaim;
+import de.breakcraft.survival.chunkclaims.ChunkClaim;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
