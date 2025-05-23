@@ -1,7 +1,6 @@
 package de.breakcraft.survival.listeners;
 
 import de.breakcraft.survival.pawnshop.PawnshopHolder;
-import de.breakcraft.survival.pawnshop.PawnshopManager;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,13 +15,13 @@ public class InventoryListener implements Listener {
         var clickedInv = e.getClickedInventory();
         if(clickedInv == null) return;
 
-        if(clickedInv.getHolder() == null || !(clickedInv.getHolder() instanceof PawnshopHolder)) return;
+        if(clickedInv.getHolder() == null || !(clickedInv.getHolder() instanceof PawnshopHolder holder)) return;
 
-        e.setCancelled(true);
         if(e.getCurrentItem() == null) return;
+        e.setCancelled(true);
         var type = e.getCurrentItem().getType();
         if(type == Material.GRAY_STAINED_GLASS_PANE || type == Material.CRAFTING_TABLE) return;
-        PawnshopManager.handleEvent(p, e.isRightClick(), e.getCurrentItem());
+        holder.handleEvent(p, e.isRightClick(), e.getCurrentItem().getType());
     }
 
 

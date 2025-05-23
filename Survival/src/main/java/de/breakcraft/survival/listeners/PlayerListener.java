@@ -14,14 +14,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
-
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 
 public class PlayerListener implements Listener {
     private Scoreboard prefixManager;
-    private HashMap<UUID, Double> balances;
+    private final HashMap<UUID, Double> balances = new HashMap<>();
 
     public void openBalanceListener() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(SurvivalPlugin.getInstance(), () -> {
@@ -51,7 +50,7 @@ public class PlayerListener implements Listener {
             prefixManager = Bukkit.getScoreboardManager().getNewScoreboard();
 
         LuckPerms luckPerms = LuckPermsProvider.get();
-        luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAcceptAsync((user -> {
+        luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAccept((user -> {
             String prefix;
             System.out.println(user.getPrimaryGroup());
             Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();

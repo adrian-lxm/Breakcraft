@@ -1,8 +1,10 @@
 package de.breakcraft.survival.pawnshop;
 
+import de.breakcraft.survival.SurvivalPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
@@ -69,6 +71,35 @@ public class PawnshopHolder implements InventoryHolder {
                 i += 2;
                 i2 += 9;
             }
+        }
+    }
+
+    public void handleEvent(Player p, boolean stack, Material type) {
+        PawnShopItem shopItem = PawnShopItem.getByMaterial(type);
+        if(shopItem == null) return;
+        var inventory = p.getInventory();
+        if(!inventory.contains(shopItem.getMaterial())) {
+            p.sendMessage("§cDu hast kein " + shopItem.getName() + " in deinem Inventar!");
+            return;
+        }
+        int slot = 0;
+        int lowest = 65; // higher than a full possible stack to catch the itemStack if lowest amount is a full stack
+        for(int i = 0; i < inventory.getSize(); i++) {
+            if(inventory.getItem(i) == null || inventory.getItem(i).getType() != type) continue;
+            if(inventory.getItem(i).getAmount() < lowest) {
+                slot = i;
+                lowest = inventory.getItem(i).getAmount();
+            }
+        }
+        if(stack) {
+            inventory.clear(slot);
+            SurvivalPlugin.getInstance().getEconomy().depositPlayer(p, lowest * shopItem.getWorth());
+            p.sendMessage(String.format("§aDu hast §e%dx %s §afür §e%d€ §averkauft!", lowest, shopItem.getName(), lowest * shopItem.getWorth()));
+        } else {
+            if(lowest > 1) inventory.getItem(slot).setAmount(lowest - 1);
+            else inventory.clear(slot);
+            SurvivalPlugin.getInstance().getEconomy().depositPlayer(p, lowest * shopItem.getWorth());
+            p.sendMessage(String.format("§aDu hast §e1x %s §afür §e%d€ §averkauft!", shopItem.getName(), shopItem.getWorth()));
         }
     }
 

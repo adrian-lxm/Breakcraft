@@ -1,7 +1,6 @@
 package de.breakcraft.survival.chunkclaims;
 
 import de.breakcraft.survival.SurvivalPlugin;
-import org.bukkit.Chunk;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,9 +11,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class ChunkClaim {
     private int id;
-    private UUID owner;
+    private final UUID owner;
 
-    private ChunkKey chunkKey;
+    private final ChunkKey chunkKey;
 
     private volatile UUID[] trustedPlayers;
 
@@ -104,10 +103,6 @@ public class ChunkClaim {
             trustedPlayers = newArray;
             return true;
         });
-    }
-
-    public int getId() {
-        return id;
     }
 
     public String getWorld() {

@@ -1,6 +1,5 @@
 package de.breakcraft.survival.listeners;
 
-import com.sun.source.tree.BreakTree;
 import de.breakcraft.survival.SurvivalPlugin;
 import de.breakcraft.survival.chunkclaims.ChunkClaim;
 import org.bukkit.Chunk;
@@ -8,12 +7,9 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,9 +28,7 @@ public class ChunkClaimListeners implements Listener {
                 optionalClaim = claimManager.getChunkClaim(block.getChunk());
             }
 
-            case PHYSICAL -> {
-                optionalClaim = claimManager.getChunkClaim(p.getLocation().getChunk());
-            }
+            case PHYSICAL -> optionalClaim = claimManager.getChunkClaim(p.getLocation().getChunk());
 
             default -> {
                 return;
