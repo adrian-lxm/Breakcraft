@@ -1,5 +1,6 @@
 package de.breakcraft.survival.commands;
 
+import de.breakcraft.survival.pawnshop.PawnshopHolder;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -10,12 +11,11 @@ public class Pawnshop implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if(sender instanceof Player) {
-            Player p = (Player) sender;
-            p.openInventory(de.breakcraft.survival.pawnshop.Pawnshop.createShopInv());
-            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-        }
-        return false;
+        if(!(sender instanceof Player p)) return false;
+        PawnshopHolder pawnshopHolder = new PawnshopHolder();
+        p.openInventory(pawnshopHolder.getInventory());
+        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+        return true;
     }
 
 }

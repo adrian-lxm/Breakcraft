@@ -12,20 +12,47 @@ public class Regeln implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
-        if(commandSender instanceof Player) {
-            Player p = (Player) commandSender;
-            ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-            BookMeta meta = (BookMeta) book.getItemMeta();
-            meta.setAuthor("§aBreakcraft Team");
-            meta.setTitle("§5Breakcraft Survival Guide");
-            meta.addPage("§aEinführung\n\n§aHier hast du eine kleine Kurzfassung zu allen Möglichkeiten hier !");
-            meta.addPage("§aRegeln\n\n§a1. Respekt gegen über jedem\n§a2.Keine Hacks\n§a3. Kein Griefing (dazu zählt auch andere Töten)\n§a4. ChunkClaims nicht dafür nutzen um Flächen die unbebaut sind für sich zu behalten.\n§a5. Keine Beledigungen oder Diskriminierung");
-            meta.addPage("§Einige nützliche Commands\n\n§a1. /pawnshop\nVerkaufe Items gegen Ingame Geld\n\n§a2. /chunk\nClaime Chunks und sichere dein Gebiet");
-            book.setItemMeta(meta);
-            p.getInventory().addItem(book);
-            p.sendMessage("§aDu hast ein Buch mit den Regeln gekriegt !");
-        }
-        return false;
+        if(!(commandSender instanceof Player p)) return false;
+
+        ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+        BookMeta meta = (BookMeta) book.getItemMeta();
+        meta.setAuthor("§aBreakcraft Team");
+        meta.setTitle("§5Breakcraft Survival Guide");
+        String page1 = """
+                §aEinführung
+                
+                §aHier hast du eine kleine Kurzfassung zu allen Möglichkeiten hier !
+                """;
+        String page2 = """
+                §aRegeln
+                
+                
+                1. Respekt gegen über jedem
+                
+                2.Keine Hacks
+                
+                3. Kein Griefing
+                
+                4. Die Beanspruchung von Chunks dient zur Sicherung von Bauflächen.
+                Dies bedeutet, dass z.B. die Beanspruchung von Großflächen in den meisten Fällen verboten ist.
+                Gehe bitte menschlich mit diesem System um, damit auch andere Spieler einen Platz auf dem Server nutzen können.
+                
+                5. Keine Beledigungen oder andere Arten der Diskriminierung
+                """;
+        String page3 = """
+                §aEinige nützliche Commands
+                
+                
+                §a1. /pawnshop
+                Verkaufe Items gegen Ingame Geld
+                
+                §a2. /chunk
+                Beanspruche Chunks und baue in Sicherheit
+                """;
+        meta.addPage(page1, page2, page3);
+        book.setItemMeta(meta);
+        p.openBook(book);
+        return true;
     }
 
 }

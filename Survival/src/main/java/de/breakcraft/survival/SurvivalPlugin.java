@@ -87,19 +87,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
     @Override
     public void onDisable() {
         if(dataSource != null) dataSource.close();
-        playerListener.closeListener();
-    }
-
-    public Economy getEconomy() {
-        return economy;
-    }
-
-    public DataSource getDataSource() {
-        return dataSource;
-    }
-
-    public ClaimManager getClaimManager() {
-        return ccm;
+        Bukkit.getScheduler().cancelTasks(this);
     }
 
     private boolean setupEconomy() {
@@ -136,6 +124,18 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Economy getEconomy() {
+        return economy;
+    }
+
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    public ClaimManager getClaimManager() {
+        return ccm;
     }
 
     public static SurvivalPlugin getInstance() {

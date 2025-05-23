@@ -1,15 +1,12 @@
 package de.breakcraft.survival.chunkclaims;
 
 import de.breakcraft.survival.SurvivalPlugin;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.OfflinePlayer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,50 +14,42 @@ public class ChunkClaim {
     private int id;
     private UUID owner;
 
-    private String world;
-
-    private int chunkX;
-
-    private int chunkZ;
+    private ChunkKey chunkKey;
 
     private volatile UUID[] trustedPlayers;
 
-    public ChunkClaim(Chunk claim, UUID owner) {
+    public ChunkClaim(ChunkKey key, UUID owner) {
         this.owner = owner;
-        this.world = claim.getWorld().getName();
-        this.chunkX = claim.getX();
-        this.chunkZ = claim.getZ();
+        chunkKey = key;
         trustedPlayers = new UUID[0];
     }
 
-    public ChunkClaim(int id, UUID owner, String world, int chunkX, int chunkZ, UUID[] trustedPlayers) {
+    public ChunkClaim(int id, UUID owner, ChunkKey key, UUID[] trustedPlayers) {
         this.id = id;
         this.owner = owner;
-        this.world = world;
-        this.chunkX = chunkX;
-        this.chunkZ = chunkZ;
+        chunkKey = key;
         this.trustedPlayers = trustedPlayers;
     }
 
-    public CompletableFuture<Boolean> saveToDatabase() {
+    public CompletableFuture<ChunkClaim> saveToDatabase() {
         return CompletableFuture.supplyAsync(() -> {
             try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
                 var statement = con.prepareStatement("INSERT INTO chunkclaim (uuid, world, x, z, flags) values (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, owner.toString());
-                statement.setString(2, world);
-                statement.setInt(3, chunkX);
-                statement.setInt(4, chunkZ);
+                statement.setString(2, getWorld());
+                statement.setInt(3, getChunkX());
+                statement.setInt(4, getChunkZ());
                 statement.setNull(5, Types.VARCHAR);
                 statement.executeUpdate();
 
                 try(ResultSet set = statement.getGeneratedKeys()) {
-                    if(!set.next()) return false;
+                    if(!set.next()) return null;
                     id = set.getInt(1);
                 }
             } catch (SQLException e) {
-                return false;
+                return null;
             }
-            return true;
+            return this;
         });
     }
 
@@ -122,23 +111,19 @@ public class ChunkClaim {
     }
 
     public String getWorld() {
-        return world;
+        return chunkKey.world();
     }
 
     public int getChunkX() {
-        return chunkX;
+        return chunkKey.chunkX();
     }
 
     public int getChunkZ() {
-        return chunkZ;
+        return chunkKey.chunkZ();
     }
 
     public UUID[] getTrustedPlayers() {
         return trustedPlayers;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, owner, world, chunkX, chunkZ, Arrays.hashCode(trustedPlayers));
-    }
 }

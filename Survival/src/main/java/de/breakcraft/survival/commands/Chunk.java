@@ -2,6 +2,7 @@ package de.breakcraft.survival.commands;
 
 import de.breakcraft.survival.SurvivalPlugin;
 import de.breakcraft.survival.chunkclaims.ChunkClaim;
+import de.breakcraft.survival.chunkclaims.ChunkKey;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -9,111 +10,175 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Chunk implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if(sender instanceof Player) {
-            Player p = (Player) sender;
-            if(args.length == 1) {
-                if(args[0].equals("help")) {
-                    p.sendMessage("§a-------------------------------------------");
-                    p.sendMessage("");
-                    p.sendMessage("§aAlle Command Möglichkeiten für §e/chunk");
-                    p.sendMessage("");
-                    p.sendMessage("§e/chunk info §a- Gibt dir Infos zum aktuellen Chunk");
-                    p.sendMessage("§e/chunk claim §a- Claimt den Chunk zu deinem aktuellen Preis");
-                    p.sendMessage("§e/chunk price §a- Zeigt dir deinen aktuellen Claimpreis an");
-                    p.sendMessage("");
-                    p.sendMessage("§a-------------------------------------------");
-                } else if(args[0].equals("info")) {
-                    if(SurvivalPlugin.ccm.isChunkClaimed(p.getLocation().getChunk())) {
-                        ChunkClaim claim = SurvivalPlugin.ccm.getClaimByChunk(p.getLocation().getChunk());
-                        OfflinePlayer owner = Bukkit.getOfflinePlayer(claim.owner);
-                        p.sendMessage("§a-------------------------------------------");
-                        p.sendMessage("");
-                        p.sendMessage("§aClaim Infos zum aktuellen Chunk");
-                        p.sendMessage("");
-                        p.sendMessage("§aOwner: §e" + owner.getName());
-                        if(claim.trusted.size() > 0) {
-                            p.sendMessage("§aTrusted Players:");
-                            for(UUID id : claim.trusted) {
-                                OfflinePlayer trusted = Bukkit.getOfflinePlayer(id);
-                                p.sendMessage("   §a- §e" + trusted.getName());
-                            }
-                        } else p.sendMessage("§aTrusted Players: §eNone");
-                        p.sendMessage("");
-                        p.sendMessage("§a-------------------------------------------");
-                    } else p.sendMessage("§cDieser Chunk ist nicht geclaimed !");
-                } else if(args[0].equals("claim")) {
-                    if(SurvivalPlugin.ccm.claimCount.get(p) > 0) {
-                        int count = SurvivalPlugin.ccm.claimCount.get(p) - 1;
-                        int price = 1000;
-                        if(count != 0) price = (int) (1000 * (3.5 * count));
-                        else price = 1000;
-                        if(SurvivalPlugin.getInstance().econ.getBalance(p) >= price) {
-                            if(!(SurvivalPlugin.ccm.isChunkClaimed(p.getLocation().getChunk()))) {
-                                SurvivalPlugin.getInstance().econ.withdrawPlayer(p, price);
-                                SurvivalPlugin.ccm.createClaim(p, p.getLocation().getChunk());
-                                SurvivalPlugin.ccm.claimCount.replace(p, SurvivalPlugin.ccm.claimCount.get(p) + 1);
-                                p.sendMessage("§aDu hast den Chunk für §e" + price + "€ §ageclaimed !");
-                            } else p.sendMessage("§cDieser Chunk ist schon geclaimed !");
-                        } else  p.sendMessage("§cDu hast nicht genug Geld !");
-                    } else {
-                        if(!(SurvivalPlugin.ccm.isChunkClaimed(p.getLocation().getChunk()))) {
-                            SurvivalPlugin.ccm.createClaim(p, p.getLocation().getChunk());
-                            SurvivalPlugin.ccm.claimCount.replace(p, SurvivalPlugin.ccm.claimCount.get(p) + 1);
-                            p.sendMessage("§aDu hast deinen ersten Chunk geclaimed !");
-                        } else p.sendMessage("§cDieser Chunk ist schon geclaimed !");
+        if(!(sender instanceof Player p)) {
+            sender.sendMessage("Das kannst du nur als Spieler");
+            return false;
+        }
+
+        var plugin = SurvivalPlugin.getInstance();
+
+        switch (args.length) {
+            case 1 -> {
+                switch (args[0]) {
+                    case "info" -> {
+                        Optional<ChunkClaim> optionalChunk = plugin.getClaimManager().getChunkClaim(p.getLocation().getChunk());
+                        if(optionalChunk.isEmpty()) {
+                            p.sendMessage("§cDieser Chunk ist nicht beansprucht !");
+                            return true;
+                        }
+                        ChunkClaim claim = optionalChunk.get();
+                        p.sendMessage(infoMessage(claim));
                     }
-                } else if(args[0].equals("price")) {
-                    if(SurvivalPlugin.ccm.claimCount.get(p) > 0) {
-                        int count = SurvivalPlugin.ccm.claimCount.get(p) - 1;
+
+                    case "price" -> {
+                        int count = plugin.getClaimManager().getClaims().values().stream()
+                                .filter(claim -> claim.isOwner(p.getUniqueId()))
+                                .mapToInt(claim -> 1)
+                                .sum();
+                        String message;
+                        if(count != 0) {
+                            int price = 1000 + 150 * pow(count-1);
+                            message = "$aDeine nächste Chunk-Beanspruchung kostet §e" + price + "€ §a.";
+                        } else message = "§aDeine erster Beanspruchung ist gratis!";
+                        p.sendMessage(message);
+                    }
+
+                    case "claim" -> {
+                        int count = plugin.getClaimManager().getClaims().values().stream()
+                                .filter(claim -> claim.isOwner(p.getUniqueId()))
+                                .mapToInt(claim -> 1)
+                                .sum();
                         int price;
-                        if(count != 0) price = (int) (1000 * (3.5 * count));
-                        else price = 1000;
-                        p.sendMessage("§aFür deinen nächste §eClaim §amusst du §e" + price + "€ §a!");
-                    } else p.sendMessage("§aDein erster Claim ist gratis !");
-                } else p.chat("/chunk help");
-            } else if(args.length == 3) {
-                if(args[0].equals("trust")) {
-                    if(args[1].equals("add")) {
-                        if(SurvivalPlugin.ccm.isChunkClaimed(p.getLocation().getChunk())) {
-                            ChunkClaim claim = SurvivalPlugin.ccm.getClaimByChunk(p.getLocation().getChunk());
-                            if(claim.owner.equals(p.getUniqueId())) {
-                                OfflinePlayer p2 = Bukkit.getOfflinePlayer(args[2]);
-                                if(p2.hasPlayedBefore()) {
-                                    if(!(claim.isTrusted(p2.getUniqueId()))) {
-                                        claim.addTrusted(p2.getUniqueId());
-                                        p.sendMessage("§e" + p2.getName() + " §awurde getrusted !");
-                                    } else p.sendMessage("§cDieser Spieler ist schon getrusted !");
-                                } else p.sendMessage("§e" + args[2] + " §chat noch nie auf dem Server gespielt !");
-                            } else p.sendMessage("§cDieser Chunk gehört dir nicht !");
-                        } else p.sendMessage("§cDieser Chunk ist nicht geclaimed !");
-                    } else if(args[1].equals("remove")) {
-                        if(SurvivalPlugin.ccm.isChunkClaimed(p.getLocation().getChunk())) {
-                            ChunkClaim claim = SurvivalPlugin.ccm.getClaimByChunk(p.getLocation().getChunk());
-                            if(claim.owner.equals(p.getUniqueId())) {
-                                OfflinePlayer p2 = Bukkit.getOfflinePlayer(args[2]);
-                                if(p2.hasPlayedBefore()) {
-                                    if(claim.isTrusted(p2.getUniqueId())) {
-                                        claim.removeTrusted(p2.getUniqueId());
-                                        p.sendMessage("§e" + p2.getName() + " §awurde enttrusted !");
-                                    } else p.sendMessage("§cDieser Spieler ist schon getrusted !");
-                                } else p.sendMessage("§e" + args[2] + " §chat noch nie auf dem Server gespielt !");
-                            } else p.sendMessage("§cDieser Chunk gehört dir nicht !");
-                        } else p.sendMessage("§cDieser Chunk ist nicht geclaimed !");
-                    } else p.chat("/chunk help");
-                } else p.chat("/chunk help");
-            } else p.chat("/chunk help");
-        } else sender.sendMessage("Das kannst du nur als Spieler");
-        return false;
+                        if(count != 0) price = 1000 + 150 * pow(count-1);
+                        else price = 0;
+                        if(plugin.getEconomy().getBalance(p) < price) {
+                            p.sendMessage("§cDu hast nicht genug Geld!");
+                            return true;
+                        }
+                        var chunk = p.getLocation().getChunk();
+                        if(plugin.getClaimManager().getChunkClaim(chunk).isPresent()) {
+                            p.sendMessage("§cDieser Chunk ist bereits beansprucht!");
+                            return true;
+                        }
+                        var key = ChunkKey.fromChunk(chunk);
+                        new ChunkClaim(key, p.getUniqueId()).saveToDatabase().thenAccept(claim -> Bukkit.getScheduler().runTask(plugin, () -> {
+                            if(claim == null) {
+                                p.sendMessage("§cEs gab einen Fehler! Bitte kontaktiere den Administrator");
+                                return;
+                            }
+                            plugin.getEconomy().withdrawPlayer(p, price);
+                            plugin.getClaimManager().getClaims().put(key, claim);
+                            p.sendMessage("$aDu hast diesen Chunk für §e" + price + "€ beansprucht!");
+                        }));
+                    }
+
+                    default -> p.sendMessage(helpMessage());
+
+                }
+
+
+            }
+
+            case 3 -> {
+                if(!args[0].equals("trust")) {
+                    p.chat("/chunk help");
+                    return true;
+                }
+
+                boolean add = args[1].equals("add");
+                if(!(add || args[1].equals("remove"))) {
+                    p.chat("/chunk help");
+                }
+                var trust = Bukkit.getOfflinePlayer(args[2]);
+                if(!trust.hasPlayedBefore()) {
+                    p.sendMessage("§cDieser Spieler war noch nie auf dem Server!");
+                    return true;
+                }
+                Optional<ChunkClaim> optionalClaim = plugin.getClaimManager().getChunkClaim(p.getLocation().getChunk());
+                if(optionalClaim.isEmpty()) {
+                    p.sendMessage("§cDieser Chunk ist nicht beansprucht!");
+                    return true;
+                }
+                var claim = optionalClaim.get();
+                if(!claim.isOwner(p.getUniqueId())) {
+                    p.sendMessage("§cDu bist nicht Besitzer dieses Chunks!");
+                    return true;
+                }
+                var scheduler = Bukkit.getScheduler();
+                if(add) {
+                    if(claim.isTrusted(trust.getUniqueId())) {
+                        p.sendMessage("§cDiesem Spieler wird bereits vertraut!");
+                        return true;
+                    }
+                    claim.addTrusted(trust.getUniqueId()).thenAccept((success) -> scheduler.runTask(plugin, () -> {
+                        if(!success) p.sendMessage("§cEs gab einen Fehler! Bitte kontaktiere den Administrator!");
+                        else p.sendMessage("§e" + trust.getName() +" §awird nun auf diesem Chunk vertraut!");
+                    }));
+                } else {
+                    if(!claim.isTrusted(trust.getUniqueId())) {
+                        p.sendMessage("§cDieser Spieler ist nicht auf der Vertrauensliste!");
+                        return true;
+                    }
+                    claim.removeTrusted(trust.getUniqueId()).thenAccept((success) -> scheduler.runTask(plugin, () -> {
+                        if(!success) p.sendMessage("§cEs gab einen Fehler! Bitte kontaktiere den Administrator!");
+                        else p.sendMessage("§e" + trust.getName() +" §cwird nun nicht mehr auf diesem Chunk vertraut!");
+                    }));
+                }
+
+            }
+
+            default -> p.chat("/chunk help");
+        }
+
+        return true;
+    }
+
+    private int pow(int a) {
+        return a*a;
+    }
+
+    private String infoMessage(ChunkClaim claim) {
+        String info = """
+                §a-------------------------------------------
+                
+                §aInfos zum aktuellen Chunk
+                
+                §aBesitzer: §e%s
+                §aVertraute Spieler:%s
+                
+                §a-------------------------------------------
+                """;
+        OfflinePlayer owner = Bukkit.getOfflinePlayer(claim.getOwner());
+        String trusted;
+        if(claim.getTrustedPlayers().length != 0) {
+            trusted = "";
+            for(UUID id : claim.getTrustedPlayers()) {
+                OfflinePlayer player = Bukkit.getOfflinePlayer(id);
+                trusted += "\n   §a- §e" + player.getName();
+            }
+        } else trusted = "\n   §eNone";
+        return String.format(info, owner.getName(), trusted);
+    }
+
+    private String helpMessage() {
+        return """
+                §a-------------------------------------------
+                
+                §aAlle Command Möglichkeiten für §e/chunk
+                
+                §e/chunk info §a- Gibt dir Infos zum aktuellen Chunk
+                §e/chunk claim §a- Beansprucht den Chunk zu deinem aktuellen Preis
+                §e/chunk price §a- Zeigt dir deinen aktuellen Preis für eine Beanspruchung an
+                §e/chunk trust [add|remove] [spieler]
+                
+                [] = benötigtes Argument
+                §a-------------------------------------------""";
     }
 
     @Override

@@ -1,16 +1,13 @@
 package de.breakcraft.survival.chunkclaims;
 
 import de.breakcraft.survival.SurvivalPlugin;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.OfflinePlayer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 public class ClaimManager {
-    private final List<ChunkClaim> claims = new ArrayList<>();
-    public HashMap<OfflinePlayer, Integer> claimCount = new HashMap<>();
+    private final HashMap<ChunkKey, ChunkClaim> claims = new HashMap<>();
 
     public void initManager() {
         try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
@@ -26,15 +23,12 @@ public class ClaimManager {
                 String trusted = set.getString(6);
                 if (trusted != null) {
                     String raw = set.getString("trusted");
-                    if (raw.contains(",")) {
-                        String[] uuids = trusted.split(",");
-                        for (String uuid : uuids)
-                            trustedPlayers.add(UUID.fromString(uuid));
-                    } else {
-                        trustedPlayers.add(UUID.fromString(raw));
-                    }
+                    String[] uuids = trusted.split(",");
+                    for (String uuid : uuids)
+                        trustedPlayers.add(UUID.fromString(uuid));
                 }
-                claims.add(new ChunkClaim(id, owner, world, chunkX, chunkZ, (UUID[]) trustedPlayers.toArray()));
+                var key = new ChunkKey(world, chunkX, chunkZ);
+                claims.put(key, new ChunkClaim(id, owner, key, (UUID[]) trustedPlayers.toArray()));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -42,12 +36,10 @@ public class ClaimManager {
     }
 
     public Optional<ChunkClaim> getChunkClaim(Chunk chunk) {
-        for (ChunkClaim claim : this.claims) {
-            Chunk claimedChunk = Bukkit.getWorld(claim.getWorld()).getChunkAt(claim.getChunkX(), claim.getChunkZ());
-            if (claimedChunk.getX() == chunk.getX() && claimedChunk.getZ() == chunk.getZ())
-                return Optional.of(claim);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(claims.get(ChunkKey.fromChunk(chunk)));
     }
 
+    public HashMap<ChunkKey, ChunkClaim> getClaims() {
+        return claims;
+    }
 }

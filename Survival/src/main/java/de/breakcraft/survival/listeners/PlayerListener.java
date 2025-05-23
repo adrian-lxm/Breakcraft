@@ -21,11 +21,10 @@ import java.util.UUID;
 
 public class PlayerListener implements Listener {
     private Scoreboard prefixManager;
-    private int task;
     private HashMap<UUID, Double> balances;
 
     public void openBalanceListener() {
-        task = Bukkit.getScheduler().scheduleSyncRepeatingTask(SurvivalPlugin.getInstance(), () -> {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(SurvivalPlugin.getInstance(), () -> {
             var economy = SurvivalPlugin.getInstance().getEconomy();
             for(Player player : Bukkit.getOnlinePlayers()) {
                 if(!balances.containsKey(player.getUniqueId())) continue;
@@ -42,10 +41,6 @@ public class PlayerListener implements Listener {
                 player.setScoreboard(board);
             }
         }, 0, (long) (20 * 2.5));
-    }
-
-    public void closeListener() {
-        Bukkit.getScheduler().cancelTask(task);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
