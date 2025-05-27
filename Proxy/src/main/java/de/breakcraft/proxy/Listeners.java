@@ -7,6 +7,7 @@ import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import de.breakcraft.proxy.commands.Ban;
 import de.breakcraft.proxy.db.BanEntry;
@@ -25,21 +26,22 @@ import java.util.concurrent.TimeUnit;
 
 public class Listeners {
     private final ProxyServer server;
+    private final ChannelIdentifier identifier;
 
-    public Listeners(ProxyServer server) {
+    public Listeners(ProxyServer server, ChannelIdentifier identifier) {
         this.server = server;
+        this.identifier = identifier;
     }
 
     @Subscribe
     public void onProxyLogin(LoginEvent e) {
         Player p = e.getPlayer();
 
-        Map<UUID, BanEntry> entries = DatabaseManager.get().getActiveBans();
+        var entries = DatabaseManager.get().getActiveBans();
 
         BanEntry entry = entries.get(p.getUniqueId());
         if(entry == null) return;
-
-        if(entry.isActive()) {
+        if(!entry.isActive()) {
             entries.remove(entry.getUuid());
             return;
         }
@@ -48,7 +50,7 @@ public class Listeners {
     }
 
     @Subscribe
-    public void onConnection(ServerConnectedEvent event) {
+    public void onServerConnected(ServerConnectedEvent event) {
         if(event.getPreviousServer().isPresent()) return;
 
         MiniMessage mm = MiniMessage.miniMessage();
@@ -66,7 +68,7 @@ public class Listeners {
                 out.writeUTF("ALL");
                 out.writeInt(server.getPlayerCount());
                 for(RegisteredServer registeredServer : server.getAllServers()) {
-                    registeredServer.sendPluginMessage(ProxyPlugin.getIdentifier(), boas.toByteArray());
+                    registeredServer.sendPluginMessage(identifier, boas.toByteArray());
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -93,7 +95,7 @@ public class Listeners {
             out.writeUTF("ALL");
             out.writeInt(server.getPlayerCount());
             for(RegisteredServer registeredServer : server.getAllServers()) {
-                registeredServer.sendPluginMessage(ProxyPlugin.getIdentifier(), boas.toByteArray());
+                registeredServer.sendPluginMessage(identifier, boas.toByteArray());
                 registeredServer.getPlayersConnected().forEach(player -> player.sendMessage(msg));
             }
         } catch (IOException e) {

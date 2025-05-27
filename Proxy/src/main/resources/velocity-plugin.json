@@ -3,7 +3,7 @@
   "name": "Breakcraft-Proxy",
   "version": "1.0-revived",
   "authors": [
-    "DeinName"
+    "adrian-lxm"
   ],
   "main": "de.breakcraft.proxy.ProxyPlugin"
 }

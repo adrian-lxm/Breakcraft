@@ -39,7 +39,7 @@ public class Ban implements SimpleCommand {
             }
 
             DatabaseManager.get().addBan(banned.get(), -1, null)
-                    .thenAcceptAsync(entry -> handleEntry(entry, player));
+                    .thenAccept(entry -> handleEntry(entry, player));
 
             return;
         }
@@ -70,7 +70,7 @@ public class Ban implements SimpleCommand {
             try {
                 int time = Integer.parseInt(args[1].substring(0, args[1].length() - 1));
                 DatabaseManager.get().addBan(banned.get(), (long) time * multiplicator, null)
-                        .thenAcceptAsync(entry -> handleEntry(entry, player));
+                        .thenAccept(entry -> handleEntry(entry, player));
             } catch (NumberFormatException e) {
                 player.sendMessage(Component.text("Ungültige Zahl !").color(NamedTextColor.RED));
                 return;
@@ -89,17 +89,11 @@ public class Ban implements SimpleCommand {
 
             long multiplicator;
             switch (unit) {
-                case 'd' -> {
-                    multiplicator = 24L * 60 * 60 * 1000;
-                }
+                case 'd' -> multiplicator = 24L * 60 * 60 * 1000;
 
-                case 'w' -> {
-                    multiplicator = 7L * 24 * 60 * 60 * 1000;
-                }
+                case 'w' -> multiplicator = 7L * 24 * 60 * 60 * 1000;
 
-                case 'm' -> {
-                    multiplicator = 30L * 24 * 60 * 60 * 1000;
-                }
+                case 'm' -> multiplicator = 30L * 24 * 60 * 60 * 1000;
 
                 default -> {
                     player.sendMessage(Component.text(unit + " ist keine Zeiteinheit !").color(NamedTextColor.RED));
@@ -116,14 +110,12 @@ public class Ban implements SimpleCommand {
                 }
 
                 DatabaseManager.get().addBan(banned.get(), (long) time * multiplicator, reason)
-                        .thenAcceptAsync(entry -> handleEntry(entry, player));
+                        .thenAccept(entry -> handleEntry(entry, player));
             } catch (NumberFormatException e) {
                 player.sendMessage(Component.text("Ungültige Zahl !").color(NamedTextColor.RED));
-                return;
             }
 
         }
-
 
     }
 
@@ -145,7 +137,8 @@ public class Ban implements SimpleCommand {
 
     @Override
     public boolean hasPermission(Invocation invocation) {
-        return invocation.source().hasPermission("breakcraft.ban");
+        if(!(invocation.source() instanceof Player player)) return true;
+        return player.hasPermission("breakcraft.ban");
     }
 
     public static Component createBanMessage(BanEntry entry) {
@@ -172,7 +165,7 @@ public class Ban implements SimpleCommand {
         Instant instant = Instant.ofEpochMilli(duration);
         ZoneId id = ZoneId.systemDefault();
         ZonedDateTime zdt = ZonedDateTime.ofInstant( instant , id );
-        String dateFormat = "dd-MM-yyyy hh:mm a";
+        String dateFormat = "dd-MM-yyyy hh:mm:a";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         return zdt.format(formatter);
     }

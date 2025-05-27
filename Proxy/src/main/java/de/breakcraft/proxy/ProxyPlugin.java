@@ -2,8 +2,6 @@ package de.breakcraft.proxy;
 
 import com.google.inject.Inject;
 import com.mysql.cj.jdbc.MysqlDataSource;
-import com.velocitypowered.api.command.CommandManager;
-import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -59,42 +57,56 @@ public class ProxyPlugin {
 
         if(Files.notExists(configFile)) {
             try {
-                ConfigurationNode config = getConfig();
-                config.node("mysql", "db-name").set("");
-                config.node("mysql", "db-user").set("");
-                config.node("mysql", "db-password").set("");
-                saveConfig(config);
+                Files.createDirectories(dataDirectory);
+                var defaultNode = configLoader.createNode();
+                var mysqlNode = defaultNode.node("mysql");
+                mysqlNode.node("host").set("");
+                mysqlNode.node("port").set(3306);
+                mysqlNode.node("database").set("");
+                mysqlNode.node("user").set("");
+                mysqlNode.node("password").set("");
+                saveConfig(defaultNode);
             } catch (IOException e) {
-                logger.severe(" IOException was thrown! Message of error: " + e.getMessage());
+                logger.severe("IOException was thrown! Message of error: " + e.getMessage());
                 return;
             }
             
-            logger.warning( " Default config file created. Plugin will not activate any functions until restart!");
+            logger.warning( "Default config file created. Plugin will not activate any functions until restart!");
             return;
         }
+        var config = getConfig().node("mysql");
 
         server.getChannelRegistrar().register(IDENTIFIER);
 
-        CommandManager cm = server.getCommandManager();
-        CommandMeta banMeta = cm.metaBuilder("ban").plugin(this).build();
-        CommandMeta lobbyMeta = cm.metaBuilder("lobby").plugin(this).build();
-        CommandMeta unbanMeta = cm.metaBuilder("unban").plugin(this).build();
-        cm.register(banMeta, new Ban());
-        cm.register(lobbyMeta, new Lobby());
-        cm.register(unbanMeta, new Unban());
+        var cm = server.getCommandManager();
+        cm.register(
+                cm.metaBuilder("ban").plugin(this).build(),
+                new Ban()
+        );
+        cm.register(
+                cm.metaBuilder("lobby").plugin(this).build(),
+                new Lobby()
+        );
+        cm.register(
+                cm.metaBuilder("unban").plugin(this).build(),
+                new Unban()
+        );
 
         EventManager em = server.getEventManager();
-        em.register(this, new Listeners(server));
+        em.register(this, new Listeners(server, IDENTIFIER));
         em.register(this, new PluginMessagesListener(IDENTIFIER));
 
-        ConfigurationNode config = getConfig().node("mysql");
+
         MysqlDataSource source = new MysqlDataSource();
-        source.setUrl("jdbc:mysql://localhost:3306/" + config.node("db-name").getString());
-        source.setUser(config.node("db-user").getString());
-        source.setPassword(config.node("db-password").getString());
+        String host = config.node("host").getString();
+        int port = config.node("port").getInt();
+        String database = config.node("database").getString();
+        source.setUrl(String.format("jdbc:mysql://%s:%d/%s", host, port, database));
+        source.setUser(config.node("user").getString());
+        source.setPassword(config.node("password").getString());
         DatabaseManager.initialize(source);
 
-        logger.info(" Plugin initialized !");
+        logger.info("Plugin initialized !");
         
     }
 
@@ -106,9 +118,9 @@ public class ProxyPlugin {
         }
     }
 
-    public static void saveConfig(ConfigurationNode config) {
+    public void saveConfig(ConfigurationNode config) {
         try {
-            instance.configLoader.save(config);
+            configLoader.save(config);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -124,10 +136,6 @@ public class ProxyPlugin {
 
     public ProxyServer getServer() {
         return server;
-    }
-
-    public static ChannelIdentifier getIdentifier() {
-        return IDENTIFIER;
     }
 
 }

@@ -1,4 +1,4 @@
-package de.breakcraft.lobby.Listener;
+package de.breakcraft.lobby.listeners;
 
 
 import de.breakcraft.lobby.LobbyPlugin;
@@ -19,21 +19,24 @@ import org.bukkit.scoreboard.*;
 
 import java.util.Optional;
 
-public class JoinListener implements Listener {
-    private Scoreboard prefixManager;
+public class ServerListener implements Listener {
+    private final Scoreboard prefixManager;
+
+    public ServerListener() {
+        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+        if(scoreboardManager == null) {
+            throw new RuntimeException("ScoreboardManager is null !");
+        }
+        prefixManager = scoreboardManager.getNewScoreboard();
+    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
-        if(prefixManager == null) prefixManager = Bukkit.getScoreboardManager().getNewScoreboard();
-
-        Object spawn = LobbyPlugin.getInstance().getConfig().get("forced-spawn");
-        if(spawn != null) {
-            Location forcedSpawn = (Location) spawn;
-            p.teleport(forcedSpawn);
-        }
-        p.getInventory().setItem(0, LobbyPlugin.getCompassItem());
+        Location spawn = (Location) LobbyPlugin.get().getConfig().get("worldspawn");
+        if(spawn == null) spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
+        p.teleport(spawn);
 
         LuckPerms luckPerms = LuckPermsProvider.get();
         luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAcceptAsync((user -> {
@@ -42,7 +45,7 @@ public class JoinListener implements Listener {
             Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();
             prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
-            Bukkit.getScheduler().runTask(LobbyPlugin.getInstance(), () -> {
+            Bukkit.getScheduler().runTask(LobbyPlugin.get(), () -> {
 
                 if(prefixManager.getTeam(user.getPrimaryGroup()) == null) {
                     prefixManager.registerNewTeam(user.getPrimaryGroup()).setPrefix(" " + prefix + " ");

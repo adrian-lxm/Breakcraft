@@ -1,15 +1,10 @@
 package de.breakcraft.lobby;
 
-import de.breakcraft.lobby.Commands.ServerSpawnPoint;
-import de.breakcraft.lobby.Commands.ServerNPC;
-import de.breakcraft.lobby.Listener.*;
-import org.bukkit.Material;
+import de.breakcraft.lobby.commands.ServerNPC;
+import de.breakcraft.lobby.commands.ServerSpawnPoint;
+import de.breakcraft.lobby.listeners.*;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -17,11 +12,9 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import java.io.*;
-import java.util.*;
 
 public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
     public static LobbyPlugin instance;
-    private static ItemStack compass;
 
     @Override
     public void onEnable() {
@@ -34,32 +27,17 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
         command.setTabCompleter(serverNPC);
 
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new JoinListener(), this);
-        pm.registerEvents(new HealthFoodListener(), this);
-        pm.registerEvents(new InteractListener(), this);
-        pm.registerEvents(new InventoryListener(), this);
+        pm.registerEvents(new ServerListener(), this);
+        pm.registerEvents(new PlayerListener(), this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "breakcraft:proxy");
         getServer().getMessenger().registerIncomingPluginChannel(this, "breakcraft:proxy", this);
-
-        compass = new ItemStack(Material.COMPASS);
-        ItemMeta meta = compass.getItemMeta();
-        meta.setDisplayName("§aServerauswahl");
-        meta.addEnchant(Enchantment.DAMAGE_ALL, 1, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        List<String> lore = Arrays.asList("", "§aDrücke Rechtsklick und sehe", "§aalle unsere Server / Gamemodis !");
-        meta.setLore(lore);
-        compass.setItemMeta(meta);
 
         System.out.println("[Breakcraft-Lobby] Plugin initialized !");
 
     }
 
-    public static LobbyPlugin getInstance() {
+    public static LobbyPlugin get() {
         return instance;
-    }
-
-    public static ItemStack getCompassItem() {
-        return compass;
     }
 
 
@@ -87,7 +65,6 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
                 }
 
             }
-
 
         } catch (IOException e) {
             throw new RuntimeException(e);

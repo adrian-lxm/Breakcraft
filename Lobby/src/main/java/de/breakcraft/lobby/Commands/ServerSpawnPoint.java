@@ -1,4 +1,4 @@
-package de.breakcraft.lobby.Commands;
+package de.breakcraft.lobby.commands;
 
 import de.breakcraft.lobby.LobbyPlugin;
 import org.bukkit.Sound;
@@ -14,8 +14,8 @@ public class ServerSpawnPoint implements CommandExecutor {
         if(sender instanceof Player) {
             Player p = (Player) sender;
             if(p.hasPermission("breakcraft.serverspawnpoint")) {
-                LobbyPlugin.getInstance().getConfig().set("forced-spawn", p.getLocation());
-                LobbyPlugin.getInstance().saveConfig();
+                LobbyPlugin.get().getConfig().set("worldspawn", p.getLocation());
+                LobbyPlugin.get().saveConfig();
                 p.sendMessage("[§aBreackcraft§f] §aServer Spawnpoint wurde gesetzt !");
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
             } else p.sendMessage("[§aBreackcraft§f] §cDazu hast du nicht die Rechte !");

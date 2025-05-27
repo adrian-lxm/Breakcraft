@@ -20,7 +20,8 @@ public class MojangAPI {
             if(response.id == null) return Optional.empty();
             return Optional.of(fromTrimmed(response.id));
         } catch (IOException e) {
-            System.err.println("Fehler beim Abrufen der UUID für Nutzer " + username + ": " + e.getMessage());
+            ProxyPlugin.get().getLogger()
+                    .severe("Fehler beim Abrufen der UUID für Nutzer " + username + ": " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -42,6 +43,8 @@ public class MojangAPI {
     static class MojangResponse {
         public String name;
         public String id;
+        public String path;
+        public String errorMessage;
     }
 
 }

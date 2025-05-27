@@ -33,7 +33,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
 
         var config = getConfig();
         if(config.get("mysql.ip") == null) {
-            config.set("mysql.ip", "");
+            config.set("mysql.host", "");
             config.set("mysql.port", 3306);
             config.set("mysql.database", "");
             config.set("mysql.user", "");
@@ -69,8 +69,8 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(
                 String.format("jdbc:mysql://%s:%d/%s",
-                        config.getString("mysql.ip"),
-                        config.getInt("mysql.ip"),
+                        config.getString("mysql.host"),
+                        config.getInt("mysql.port"),
                         config.getString("mysql.database"))
         );
         hikariConfig.setUsername(config.getString("mysql.user"));

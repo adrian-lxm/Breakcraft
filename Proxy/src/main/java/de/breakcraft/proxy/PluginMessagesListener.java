@@ -24,18 +24,18 @@ public class PluginMessagesListener {
 
     @Subscribe
     public void onPluginMessage(PluginMessageEvent event) {
-        if(!(event.getSource() instanceof ServerConnection connection)) return;
-        Player player = connection.getPlayer();
-
         if(!event.getIdentifier().getId().equals(identifier.getId())) return;
         event.setResult(PluginMessageEvent.ForwardResult.handled());
+
+        if(!(event.getSource() instanceof ServerConnection connection)) return;
+        Player player = connection.getPlayer();
 
         try {
             ByteArrayDataInput in = event.dataAsDataStream();
             String subchannel = in.readUTF();
 
             switch (subchannel) {
-                case "PlayerCount":
+                case "PlayerCount" -> {
                     ByteArrayOutputStream boas = new ByteArrayOutputStream();
                     DataOutputStream out = new DataOutputStream(boas);
                     out.writeUTF("PlayerCount");
@@ -52,9 +52,9 @@ public class PluginMessagesListener {
 
                     if(player.getCurrentServer().isEmpty()) return;
                     player.getCurrentServer().get().sendPluginMessage(identifier, boas.toByteArray());
-                    break;
+                }
 
-                case "Connect":
+                case "Connect" -> {
                     String server = in.readUTF();
                     Optional<RegisteredServer> connectServer = ProxyPlugin.get().getServer().getServer(server);
                     if(connectServer.isEmpty()) {
@@ -64,16 +64,15 @@ public class PluginMessagesListener {
                     player.createConnectionRequest(connectServer.get()).connect().thenAcceptAsync(result -> {
                         if(result.isSuccessful()) return;
                         player.sendMessage(Component.text("Verbindung zum Server derzeit nicht möglich !").color(NamedTextColor.RED));
-                        ProxyPlugin.get().getLogger().warning("Player connection could not be eastablished");
+                        ProxyPlugin.get().getLogger().warning("Player connection could not be established");
                         if (result.getReasonComponent().isPresent()) {
                             TextComponent reason = (TextComponent) result.getReasonComponent().get();
                             ProxyPlugin.get().getLogger().warning("Reason: " + reason.content());
                         }
                     });
-                    break;
+                }
 
-                default:
-                    break;
+                default -> {}
             }
         } catch (IOException e) {
             ProxyPlugin.get().getLogger().severe("Error while plugin messaging: " + e.getMessage());

@@ -19,12 +19,9 @@ public class DatabaseManager {
     private DatabaseManager(DataSource source) {
         this.dataSource = source;
         activeBans = new ConcurrentHashMap<>();
-    }
-
-    public static void initialize(DataSource source) {
-        instance = new DatabaseManager(source);
-        try(Connection con = instance.dataSource.getConnection();
+        try(Connection con = dataSource.getConnection();
             PreparedStatement prep = con.prepareStatement("SELECT * FROM bans WHERE duration = -1 OR ? < (duration + timestamp)")) {
+            createBanTable(con);
             prep.setLong(1, System.currentTimeMillis());
             ResultSet set = prep.executeQuery();
             while (set.next()) {
@@ -34,13 +31,35 @@ public class DatabaseManager {
                         set.getLong(3),
                         set.getLong(4),
                         set.getString(5));
-                instance.activeBans.put(entry.getUuid(), entry);
+                activeBans.put(entry.getUuid(), entry);
             }
             set.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        ProxyPlugin.get().getLogger().info("Es wurden " + instance.activeBans.size() + " aktive Bans aus der Datenbank geladen !");
+        ProxyPlugin.get().getLogger().info("Es wurden " + activeBans.size() + " aktive Bans aus der Datenbank geladen !");
+    }
+
+    private void createBanTable(Connection con) throws SQLException {
+        var metaData = con.getMetaData();
+        try(ResultSet set = metaData.getTables(null, null, "bans", new String[]{"TABLE"})) {
+            if(set.next()) return;
+            final String createSql = "CREATE TABLE bans " +
+                    "(id INT NOT NULL AUTO_INCREMENT, " +
+                    "uuid VARCHAR(36) NOT NULL," +
+                    "timestamp BIGINT NOT NULL," +
+                    "duration BIGINT NOT NULL," +
+                    "reason VARCHAR(150) NULL," +
+                    "PRIMARY KEY (id))";
+            var stmt = con.createStatement();
+            stmt.execute(createSql);
+            stmt.close();
+            ProxyPlugin.get().getLogger().info("Datenbank Tabelle für Ban-Einträge wurde erstellt !");
+        }
+    }
+
+    public static void initialize(DataSource source) {
+        instance = new DatabaseManager(source);
     }
 
     public static DatabaseManager get() {
@@ -59,12 +78,16 @@ public class DatabaseManager {
                     prep.setNull(4, Types.VARCHAR);
                 else
                     prep.setString(4, reason);
-                prep.execute();
+                if(prep.executeUpdate() != 1) return null;
                 ResultSet set = prep.getGeneratedKeys();
-                set.next();
-                BanEntry entry = new BanEntry(set.getInt(1), player.getUniqueId(), millis, duration, reason);
+                if(!set.next()) {
+                    set.close();
+                    return null;
+                }
+                int id = set.getInt(1);
                 set.close();
-                activeBans.put(entry.getUuid(), entry);
+                BanEntry entry = new BanEntry(id, player.getUniqueId(), millis, duration, reason);
+                activeBans.put(player.getUniqueId(), entry);
                 return entry;
             } catch (SQLException e) {
                 ProxyPlugin.get().getLogger()
@@ -76,7 +99,6 @@ public class DatabaseManager {
 
     public CompletableFuture<Boolean> removeBan(BanEntry entry) {
         return CompletableFuture.supplyAsync(() -> {
-            if(entry.isActive()) return false;
             try(Connection con = dataSource.getConnection();
                 PreparedStatement prep = con.prepareStatement("UPDATE bans SET duration = 0 WHERE id = ?")) {
                 prep.setInt(1, entry.getId());
@@ -135,7 +157,7 @@ public class DatabaseManager {
                     ));
                 }
                 set.close();
-                return (BanEntry[]) entries.toArray();
+                return entries.toArray(new BanEntry[0]);
             } catch (SQLException e) {
                 ProxyPlugin.get().getLogger().severe("Error while fetching ban entry: " + e.getMessage() + " !");
                 return null;

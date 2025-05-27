@@ -26,6 +26,11 @@ public class Lobby implements SimpleCommand {
             player.sendMessage(Component.text("Lobby ist derzeit nicht erreichbar !").color(NamedTextColor.RED));
             return;
         }
+        String currentServer = player.getCurrentServer().get().getServerInfo().getName();
+        if(currentServer.equals("lobby")) {
+            player.sendMessage(Component.text("Du bist bereits in der Lobby !").color(NamedTextColor.RED));
+            return;
+        }
 
         player.createConnectionRequest(lobby.get()).connect();
 

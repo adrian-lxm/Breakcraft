@@ -1,0 +1,10 @@
+name: Breakcraft-Survival
+version: 1.0
+main: de.breakcraft.survival.SurvivalPlugin
+commands:
+  pawnshop:
+  craft:
+  chunk:
+  regeln:
+depend: [LuckPerms, Vault]
+api-version: '1.21'

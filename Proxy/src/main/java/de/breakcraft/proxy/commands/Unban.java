@@ -38,7 +38,7 @@ public class Unban implements SimpleCommand {
             return;
         }
 
-        DatabaseManager.get().removeBan(entry).thenAcceptAsync(succeed -> {
+        DatabaseManager.get().removeBan(entry).thenAccept(succeed -> {
             String msg = succeed ? "Ban wurde aufgehoben !" : "Fehler beim Ausführen des Befehls !";
             player.sendMessage(Component.text(msg).color(NamedTextColor.RED));
         });
@@ -53,7 +53,8 @@ public class Unban implements SimpleCommand {
 
     @Override
     public boolean hasPermission(Invocation invocation) {
-        return invocation.source().hasPermission("breakcraft.unban");
+        if(!(invocation.source() instanceof Player player)) return true;
+        return player.hasPermission("breakcraft.unban");
     }
 
 }

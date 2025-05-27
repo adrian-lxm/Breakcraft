@@ -4,7 +4,6 @@ import de.breakcraft.survival.SurvivalPlugin;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -33,12 +32,11 @@ public class ChunkClaim {
     public CompletableFuture<ChunkClaim> saveToDatabase() {
         return CompletableFuture.supplyAsync(() -> {
             try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
-                var statement = con.prepareStatement("INSERT INTO chunkclaim (uuid, world, x, z, flags) values (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                var statement = con.prepareStatement("INSERT INTO chunkclaim (uuid, world, x, z) values (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, owner.toString());
                 statement.setString(2, getWorld());
                 statement.setInt(3, getChunkX());
                 statement.setInt(4, getChunkZ());
-                statement.setNull(5, Types.VARCHAR);
                 statement.executeUpdate();
 
                 try(ResultSet set = statement.getGeneratedKeys()) {
