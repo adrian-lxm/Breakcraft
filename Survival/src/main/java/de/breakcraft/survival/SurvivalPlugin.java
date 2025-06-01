@@ -54,7 +54,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         getCommand("craft").setExecutor(new Craft());
         getCommand("chunk").setExecutor(new Chunk());
         getCommand("chunk").setTabCompleter(new Chunk());
-        getCommand("regeln").setExecutor(new Regeln());
+        getCommand("guide").setExecutor(new Guide());
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "breakcraft:proxy");
         getServer().getMessenger().registerIncomingPluginChannel(this, "breakcraft:proxy", this);
@@ -138,7 +138,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         return ccm;
     }
 
-    public static SurvivalPlugin getInstance() {
+    public static SurvivalPlugin get() {
         return instance;
     }
 

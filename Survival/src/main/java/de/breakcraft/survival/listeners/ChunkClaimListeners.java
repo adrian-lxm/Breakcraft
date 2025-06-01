@@ -18,7 +18,7 @@ public class ChunkClaimListeners implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent e) {
-        var claimManager = SurvivalPlugin.getInstance().getClaimManager();
+        var claimManager = SurvivalPlugin.get().getClaimManager();
         Player p = e.getPlayer();
         Optional<ChunkClaim> optionalClaim;
 
@@ -44,7 +44,7 @@ public class ChunkClaimListeners implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent e) {
         if(!(e.getDamager() instanceof Player damager && e.getEntity() instanceof Player p)) return;
-        var optionalClaim = SurvivalPlugin.getInstance().getClaimManager().getChunkClaim(p.getLocation().getChunk());
+        var optionalClaim = SurvivalPlugin.get().getClaimManager().getChunkClaim(p.getLocation().getChunk());
         if(optionalClaim.isEmpty()) return;
         var claim = optionalClaim.get();
         if(claim.isTrusted(damager.getUniqueId()) || claim.getOwner().equals(damager.getUniqueId())) return;
@@ -57,7 +57,7 @@ public class ChunkClaimListeners implements Listener {
         Set<Chunk> chunks = e.blockList().stream()
                 .map(Block::getChunk)
                 .collect(Collectors.toSet());
-        var claimManager = SurvivalPlugin.getInstance().getClaimManager();
+        var claimManager = SurvivalPlugin.get().getClaimManager();
         for(var chunk : chunks) {
             var optionalClaim = claimManager.getChunkClaim(chunk);
             if(optionalClaim.isEmpty()) continue;

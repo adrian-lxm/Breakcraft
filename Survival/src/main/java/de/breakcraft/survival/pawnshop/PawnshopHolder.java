@@ -93,12 +93,12 @@ public class PawnshopHolder implements InventoryHolder {
         }
         if(stack) {
             inventory.clear(slot);
-            SurvivalPlugin.getInstance().getEconomy().depositPlayer(p, lowest * shopItem.getWorth());
+            SurvivalPlugin.get().getEconomy().depositPlayer(p, lowest * shopItem.getWorth());
             p.sendMessage(String.format("§aDu hast §e%dx %s §afür §e%d€ §averkauft!", lowest, shopItem.getName(), lowest * shopItem.getWorth()));
         } else {
             if(lowest > 1) inventory.getItem(slot).setAmount(lowest - 1);
             else inventory.clear(slot);
-            SurvivalPlugin.getInstance().getEconomy().depositPlayer(p, shopItem.getWorth());
+            SurvivalPlugin.get().getEconomy().depositPlayer(p, shopItem.getWorth());
             p.sendMessage(String.format("§aDu hast §e1x %s §afür §e%d€ §averkauft!", shopItem.getName(), shopItem.getWorth()));
         }
     }

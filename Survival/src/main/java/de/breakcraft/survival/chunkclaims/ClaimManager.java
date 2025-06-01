@@ -12,7 +12,7 @@ public class ClaimManager {
     private final HashMap<ChunkKey, ChunkClaim> claims = new HashMap<>();
 
     public void initManager() {
-        try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
+        try(var con = SurvivalPlugin.get().getDataSource().getConnection();
             var statement = con.prepareStatement("SELECT c.*, GROUP_CONCAT(t.uuid) FROM chunkclaim c LEFT JOIN trustedplayer t ON c.id = t.claim_id GROUP BY c.id")) {
             createTables(con);
             ResultSet set = statement.executeQuery();

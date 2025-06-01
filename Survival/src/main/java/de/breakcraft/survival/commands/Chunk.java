@@ -14,6 +14,11 @@ import org.bukkit.entity.Player;
 import java.util.*;
 
 public class Chunk implements CommandExecutor, TabCompleter {
+    private final int safezone;
+
+    public Chunk() {
+        this.safezone = SurvivalPlugin.get().getConfig().getInt("safezone");
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -22,7 +27,7 @@ public class Chunk implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        var plugin = SurvivalPlugin.getInstance();
+        var plugin = SurvivalPlugin.get();
 
         switch (args.length) {
             case 1 -> {
@@ -56,8 +61,8 @@ public class Chunk implements CommandExecutor, TabCompleter {
                             p.sendMessage("§cDu kannst nur in der Oberwelt Chunks beanspruchen !");
                             return true;
                         }
-                        if(p.getLocation().distance(world.getSpawnLocation()) < 250) {
-                            p.sendMessage("§cDu musst 250 Blöcke vom Spawn entfernt sein !");
+                        if(p.getLocation().distance(world.getSpawnLocation()) < safezone) {
+                            p.sendMessage("§cDu musst " + safezone +" Blöcke vom Spawn entfernt sein !");
                             return true;
                         }
                         int count = plugin.getClaimManager().getClaims().values().stream()

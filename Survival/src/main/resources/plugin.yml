@@ -5,6 +5,8 @@ commands:
   pawnshop:
   craft:
   chunk:
-  regeln:
+  guide:
 depend: [LuckPerms, Vault]
+softdepend: [XConomy]
 api-version: '1.21'
+load: STARTUP

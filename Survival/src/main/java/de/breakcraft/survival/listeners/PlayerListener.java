@@ -8,17 +8,18 @@ import net.luckperms.api.model.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.*;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scoreboard.*;
 import java.util.HashMap;
 import java.util.Optional;
@@ -27,10 +28,24 @@ import java.util.UUID;
 public class PlayerListener implements Listener {
     private Scoreboard prefixManager;
     private final HashMap<UUID, Double> balances = new HashMap<>();
+    private WorldBorder safezone;
+
+    @EventHandler
+    public void onWorldLoaded(WorldLoadEvent event) {
+        var world = event.getWorld();
+        if(world.getEnvironment() != World.Environment.NORMAL) return;
+        int size = SurvivalPlugin.get().getConfig().getInt("safezone");
+        safezone = Bukkit.createWorldBorder();
+        safezone.setSize(size);
+        safezone.setCenter(world.getSpawnLocation());
+        safezone.setDamageBuffer(10);
+        safezone.setDamageAmount(0);
+        safezone.setWarningDistance(0);
+    }
 
     public void openBalanceListener() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(SurvivalPlugin.getInstance(), () -> {
-            var economy = SurvivalPlugin.getInstance().getEconomy();
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(SurvivalPlugin.get(), () -> {
+            var economy = SurvivalPlugin.get().getEconomy();
             for(Player player : Bukkit.getOnlinePlayers()) {
                 if(!balances.containsKey(player.getUniqueId())) continue;
                 double balance = economy.getBalance(player);
@@ -48,7 +63,7 @@ public class PlayerListener implements Listener {
         }, 0, (long) (20 * 2.5));
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
@@ -61,7 +76,7 @@ public class PlayerListener implements Listener {
             Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();
             prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
-            Bukkit.getScheduler().runTask(SurvivalPlugin.getInstance(), () -> {
+            Bukkit.getScheduler().runTask(SurvivalPlugin.get(), () -> {
 
                 if(prefixManager.getTeam(user.getPrimaryGroup()) == null) {
                     prefixManager.registerNewTeam(user.getPrimaryGroup()).setPrefix(" " + prefix + " ");
@@ -77,7 +92,7 @@ public class PlayerListener implements Listener {
                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
                 Score blank = objective.getScore(" ");
                 blank.setScore(1);
-                double money = SurvivalPlugin.getInstance().getEconomy().getBalance(p);
+                double money = SurvivalPlugin.get().getEconomy().getBalance(p);
                 balances.put(p.getUniqueId(), money);
                 Score balance = objective.getScore("   §e" + money + " €");
                 balance.setScore(2);
@@ -109,10 +124,22 @@ public class PlayerListener implements Listener {
 
         }));
         e.setJoinMessage("§e[§a+§e] " + p.getName());
-
+        Bukkit.getScheduler().runTaskLater(SurvivalPlugin.get(), () -> {
+            if(safezone.isInside(p.getLocation()))
+                p.setWorldBorder(safezone);
+        }, 40);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if(!(event.getEntity() instanceof LivingEntity)) return;
+        if(event.getLocation().getWorld().getEnvironment() != World.Environment.NORMAL) return;
+        if(safezone.isInside(event.getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
     public void onLeave(PlayerQuitEvent e) {
         e.setQuitMessage("§e[§c-§e] " + e.getPlayer().getName());
         e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
@@ -133,9 +160,9 @@ public class PlayerListener implements Listener {
         Player p = e.getPlayer();
         var world = p.getWorld();
         if(world.getEnvironment() != World.Environment.NORMAL) return;
-        if(e.getAction() != Action.PHYSICAL && e.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        if(e.getAction() != Action.PHYSICAL && e.getAction() != Action.LEFT_CLICK_BLOCK && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         double distance = p.getLocation().distance(world.getSpawnLocation());
-        if(distance >= 250) return;
+        if(distance >= safezone.getSize()) return;
         if(!p.hasPermission("breakcraft.safespawn")) {
             e.setCancelled(true);
             p.sendMessage("§cDu bist noch im sicheren Spawnbereich! Entferne dich vom Spawn um §e"  + (int) (250 - distance) + " §cBlöcken!");
@@ -143,12 +170,29 @@ public class PlayerListener implements Listener {
     }
 
     @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        if(safezone.isInside(event.getRespawnLocation()))
+            event.getPlayer().setWorldBorder(safezone);
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        var p = event.getPlayer();
+        var from = event.getFrom();
+        var dir = from.getDirection();
+
+        if(safezone.isInside(from) && !safezone.isInside(from.add(dir.multiply(1.5)))) {
+                p.setWorldBorder(null);
+        } else if(safezone.isInside(from) && safezone.isInside(from.add(dir.multiply(-1.5))))
+            p.setWorldBorder(safezone);
+    }
+
+    @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
         if(!(e.getEntity() instanceof Player p)) return;
         var world = p.getWorld();
         if(world.getEnvironment() != World.Environment.NORMAL) return;
-        double distance = p.getLocation().distance(world.getSpawnLocation());
-        if(distance >= 250) return;
+        if(!safezone.isInside(p.getLocation())) return;
         if(!p.hasPermission("breakcraft.safespawn")) {
             e.setCancelled(true);
             if(e.getDamager() instanceof Player p2)
@@ -160,8 +204,7 @@ public class PlayerListener implements Listener {
     public void onBlockBreak(EntityExplodeEvent e) {
         var world = e.getEntity().getWorld();
         if(world.getEnvironment() != World.Environment.NORMAL) return;
-        double distance = e.getLocation().distance(world.getSpawnLocation());
-        if(distance >= 250) return;
+        if(!safezone.isInside(e.getLocation())) return;
         e.setCancelled(true);
     }
 
