@@ -32,7 +32,7 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "breakcraft:proxy");
         getServer().getMessenger().registerIncomingPluginChannel(this, "breakcraft:proxy", this);
 
-        System.out.println("[Breakcraft-Lobby] Plugin initialized !");
+        getLogger().info("[Breakcraft-Lobby] Plugin initialized !");
 
     }
 
@@ -58,7 +58,8 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
                 if(!players.isScoreSet()) {
                     String old = board.getEntries().stream()
                             .filter(entry -> objective.getScore(entry).getScore() == 5)
-                            .findFirst().orElse("");
+                            .findFirst().orElse(null);
+                    if(old == null) continue;
                     board.resetScores(old);
                     players.setScore(5);
                     p.setScoreboard(board);
@@ -77,7 +78,6 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
         try {
             out.writeUTF(sub);
             for(String s : args) out.writeUTF(s);
-            System.out.println("Sending plugin message now");
             player.sendPluginMessage(this, "breakcraft:proxy", baos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -1,17 +1,17 @@
 package de.breakcraft.lobby.commands;
 
 import de.breakcraft.lobby.LobbyPlugin;
+import net.minecraft.server.v1_13_R2.NBTTagCompound;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.craftbukkit.v1_13_R2.entity.CraftEntity;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +39,11 @@ public class ServerNPC implements CommandExecutor, TabCompleter {
 
             for (Entity entity : entities) {
                 if (!(entity instanceof LivingEntity && !(entity instanceof Player))) continue;
-                PersistentDataContainer nbt = entity.getPersistentDataContainer();
-                String server = nbt.get(key, PersistentDataType.STRING);
-                if(server == null) continue;
+                net.minecraft.server.v1_13_R2.Entity nmsEntity = ((CraftEntity) entity).getHandle();
+                NBTTagCompound tag = new NBTTagCompound();
+                nmsEntity.c(tag);
+                if(!tag.hasKey("serverNPC")) continue;
+                String server = tag.getString("serverNPC");
                 if (args[1].equals("all") || server.equals(args[1])) {
                     entity.remove();
                 }
@@ -54,12 +56,18 @@ public class ServerNPC implements CommandExecutor, TabCompleter {
         try {
             EntityType type = EntityType.valueOf(args[1]);
             LivingEntity entity = (LivingEntity) p.getWorld().spawnEntity(p.getLocation(), type);
+            if(entity.getEquipment() != null) entity.getEquipment().clear();
             entity.setRemoveWhenFarAway(false);
+            entity.setInvulnerable(true);
+            entity.setSilent(true);
             entity.setAI(false);
             entity.setCustomName("§a" + args[0] + " §f[§eRechtsklick§f]");
             entity.setCustomNameVisible(true);
-            PersistentDataContainer nbt = entity.getPersistentDataContainer();
-            nbt.set(key, PersistentDataType.STRING, args[0]);
+            net.minecraft.server.v1_13_R2.Entity nmsEntity = ((CraftEntity) entity).getHandle();
+            NBTTagCompound nbt = new NBTTagCompound();
+            nmsEntity.c(nbt);
+            nbt.setString("serverNPC", args[0].toLowerCase());
+            nmsEntity.c(nbt);
             p.sendMessage("§aEntity erstellt für Server §e" + args[0] + " !");
         } catch (IllegalArgumentException ignored) {
 
@@ -84,11 +92,11 @@ public class ServerNPC implements CommandExecutor, TabCompleter {
                     for(Entity entity : p.getWorld().getEntities()) {
                         if(!(entity instanceof LivingEntity && !(entity instanceof Player))) continue;
 
-                        PersistentDataContainer nbt = entity.getPersistentDataContainer();
-                        NamespacedKey key = new NamespacedKey(LobbyPlugin.get(), "serverNPC");
-                        String server = nbt.get(key, PersistentDataType.STRING);
-                        if(server == null) continue;
-                        list.add(server);
+                        net.minecraft.server.v1_13_R2.Entity nmsEntity = ((CraftEntity) entity).getHandle();
+                        NBTTagCompound tag = new NBTTagCompound();
+                        nmsEntity.c(tag);
+                        if(!tag.hasKey("serverNPC")) continue;
+                        list.add(tag.getString("serverNPC"));
                     }
                     list.add("all");
                     break;

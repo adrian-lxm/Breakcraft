@@ -5,6 +5,7 @@ import de.breakcraft.survival.chunkclaims.ChunkClaim;
 import de.breakcraft.survival.chunkclaims.ChunkKey;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -44,12 +45,21 @@ public class Chunk implements CommandExecutor, TabCompleter {
                         String message;
                         if(count != 0) {
                             int price = 1000 + 150 * pow(count-1);
-                            message = "$aDeine nächste Chunk-Beanspruchung kostet §e" + price + "€ §a.";
+                            message = "§aDeine nächste Chunk-Beanspruchung kostet §e" + price + "€ §a.";
                         } else message = "§aDeine erster Beanspruchung ist gratis!";
                         p.sendMessage(message);
                     }
 
                     case "claim" -> {
+                        var world = p.getWorld();
+                        if(world.getEnvironment() != World.Environment.NORMAL) {
+                            p.sendMessage("§cDu kannst nur in der Oberwelt Chunks beanspruchen !");
+                            return true;
+                        }
+                        if(p.getLocation().distance(world.getSpawnLocation()) < 250) {
+                            p.sendMessage("§cDu musst 250 Blöcke vom Spawn entfernt sein !");
+                            return true;
+                        }
                         int count = plugin.getClaimManager().getClaims().values().stream()
                                 .filter(claim -> claim.isOwner(p.getUniqueId()))
                                 .mapToInt(claim -> 1)
@@ -74,7 +84,7 @@ public class Chunk implements CommandExecutor, TabCompleter {
                             }
                             plugin.getEconomy().withdrawPlayer(p, price);
                             plugin.getClaimManager().getClaims().put(key, claim);
-                            p.sendMessage("$aDu hast diesen Chunk für §e" + price + "€ beansprucht!");
+                            p.sendMessage("§aDu hast diesen Chunk für §e" + price + "€ beansprucht!");
                         }));
                     }
 
@@ -94,6 +104,7 @@ public class Chunk implements CommandExecutor, TabCompleter {
                 boolean add = args[1].equals("add");
                 if(!(add || args[1].equals("remove"))) {
                     p.chat("/chunk help");
+                    return true;
                 }
                 var trust = Bukkit.getOfflinePlayer(args[2]);
                 if(!trust.hasPlayedBefore()) {

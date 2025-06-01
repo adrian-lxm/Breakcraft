@@ -1,6 +1,5 @@
 package de.breakcraft.lobby.listeners;
 
-
 import de.breakcraft.lobby.LobbyPlugin;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
@@ -41,7 +40,6 @@ public class ServerListener implements Listener {
         LuckPerms luckPerms = LuckPermsProvider.get();
         luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAcceptAsync((user -> {
             String prefix;
-            System.out.println(user.getPrimaryGroup());
             Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();
             prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
@@ -85,17 +83,18 @@ public class ServerListener implements Listener {
 
         }));
 
-        e.setJoinMessage(null);
+        e.setJoinMessage("§e[§a+§e] " + p.getName());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLeave(PlayerQuitEvent e) {
-        e.setQuitMessage(null);
-        e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+        Player p = e.getPlayer();
+        e.setQuitMessage("§e[§c-§e] " + p.getName());
+        p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         LuckPerms luckPerms = LuckPermsProvider.get();
-        User user = luckPerms.getUserManager().getUser(e.getPlayer().getUniqueId());
+        User user = luckPerms.getUserManager().getUser(p.getUniqueId());
         Team team = prefixManager.getTeam(user.getPrimaryGroup());
-        if(team != null) team.removeEntry(e.getPlayer().getName());
+        if(team != null) team.removeEntry(p.getName());
     }
 
 }

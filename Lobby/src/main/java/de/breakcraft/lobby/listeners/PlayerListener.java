@@ -2,10 +2,9 @@ package de.breakcraft.lobby.listeners;
 
 import de.breakcraft.lobby.ChooseInventoryHolder;
 import de.breakcraft.lobby.LobbyPlugin;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
+import net.minecraft.server.v1_13_R2.NBTTagCompound;
+import org.bukkit.*;
+import org.bukkit.craftbukkit.v1_13_R2.entity.CraftEntity;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -18,18 +17,13 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
-import java.util.Arrays;
-import java.util.List;
+import org.bukkit.util.Vector;
+import java.util.*;
 
 public class PlayerListener implements Listener {
     private final ItemStack compass;
@@ -93,6 +87,11 @@ public class PlayerListener implements Listener {
     }
 
     @EventHandler
+    public void onChat(AsyncPlayerChatEvent chatEvent) {
+        chatEvent.setFormat("%s: %s");
+    }
+
+    @EventHandler
     public void onItemDrop(PlayerDropItemEvent e) {
         if(e.getItemDrop().getItemStack().isSimilar(compass)) e.setCancelled(true);
     }
@@ -101,23 +100,28 @@ public class PlayerListener implements Listener {
     public void entityInteract(PlayerInteractAtEntityEvent e) {
         Entity entity = e.getRightClicked();
         if(!(entity instanceof LivingEntity && !(entity instanceof Player))) return;
-        PersistentDataContainer nbt = entity.getPersistentDataContainer();
-        NamespacedKey key = new NamespacedKey(LobbyPlugin.get(), "serverNPC");
-        String server = nbt.get(key, PersistentDataType.STRING);
-        if(server == null) return;
-        LobbyPlugin.get().sendPluginMessage(e.getPlayer(), "Connect", server);
+        net.minecraft.server.v1_13_R2.Entity nmsEntity = ((CraftEntity) entity).getHandle();
+        NBTTagCompound tag = new NBTTagCompound();
+        nmsEntity.c(tag);
+        if(!tag.hasKey("serverNPC")) return;
+        LobbyPlugin.get().sendPluginMessage(e.getPlayer(), "Connect", tag.getString("serverNPC"));
     }
 
-    @EventHandler
+    private final Set<UUID> voidSet = new HashSet<>();
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamage(EntityDamageEvent e) {
         if(!(e.getEntity() instanceof Player)) return;
-        e.setCancelled(true);
-        if(e.getCause() != EntityDamageEvent.DamageCause.VOID) return;
         Player p = (Player) e.getEntity();
-        Location spawn = (Location) LobbyPlugin.get().getConfig().get("worldspawn");
-        if(spawn == null) spawn = p.getLocation().getWorld().getSpawnLocation();
-        p.teleport(spawn);
-        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+        if(e.getCause() == EntityDamageEvent.DamageCause.VOID && !voidSet.contains(p.getUniqueId())) {
+            voidSet.add(p.getUniqueId());
+            Location spawn = (Location) LobbyPlugin.get().getConfig().get("worldspawn");
+            if(spawn == null) spawn = p.getLocation().getWorld().getSpawnLocation();
+            p.setVelocity(new Vector(0, 0, 0));
+            p.teleport(spawn, PlayerTeleportEvent.TeleportCause.PLUGIN);
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+            Bukkit.getScheduler().runTaskLater(LobbyPlugin.get(), () -> voidSet.remove(p.getUniqueId()), 20);
+        }
+        e.setCancelled(true);
     }
 
     @EventHandler

@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 @Plugin(
         id = "breakcraft-proxy",
         name = "Breakcraft-Proxy",
-        version = "1.0-revived",
+        version = "1.1",
         authors = {"adrian-lxm"}
 )
 public class ProxyPlugin {

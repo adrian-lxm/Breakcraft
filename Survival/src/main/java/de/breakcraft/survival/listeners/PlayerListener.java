@@ -7,10 +7,16 @@ import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
@@ -52,7 +58,6 @@ public class PlayerListener implements Listener {
         LuckPerms luckPerms = LuckPermsProvider.get();
         luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAccept((user -> {
             String prefix;
-            System.out.println(user.getPrimaryGroup());
             Optional<Group> group = luckPerms.getGroupManager().loadGroup(user.getPrimaryGroup()).join();
             prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
@@ -103,19 +108,61 @@ public class PlayerListener implements Listener {
             });
 
         }));
-        e.setJoinMessage(null);
+        e.setJoinMessage("§e[§a+§e] " + p.getName());
 
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLeave(PlayerQuitEvent e) {
-        e.setQuitMessage(null);
+        e.setQuitMessage("§e[§c-§e] " + e.getPlayer().getName());
         e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         LuckPerms luckPerms = LuckPermsProvider.get();
         User user = luckPerms.getUserManager().getUser(e.getPlayer().getUniqueId());
         Team team = prefixManager.getTeam(user.getPrimaryGroup());
         if(team != null) team.removeEntry(e.getPlayer().getName());
         balances.remove(e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onChat(AsyncPlayerChatEvent e) {
+        e.setFormat("%s: %s");
+    }
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent e) {
+        Player p = e.getPlayer();
+        var world = p.getWorld();
+        if(world.getEnvironment() != World.Environment.NORMAL) return;
+        if(e.getAction() != Action.PHYSICAL && e.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        double distance = p.getLocation().distance(world.getSpawnLocation());
+        if(distance >= 250) return;
+        if(!p.hasPermission("breakcraft.safespawn")) {
+            e.setCancelled(true);
+            p.sendMessage("§cDu bist noch im sicheren Spawnbereich! Entferne dich vom Spawn um §e"  + (int) (250 - distance) + " §cBlöcken!");
+        }
+    }
+
+    @EventHandler
+    public void onDamage(EntityDamageByEntityEvent e) {
+        if(!(e.getEntity() instanceof Player p)) return;
+        var world = p.getWorld();
+        if(world.getEnvironment() != World.Environment.NORMAL) return;
+        double distance = p.getLocation().distance(world.getSpawnLocation());
+        if(distance >= 250) return;
+        if(!p.hasPermission("breakcraft.safespawn")) {
+            e.setCancelled(true);
+            if(e.getDamager() instanceof Player p2)
+                p2.sendMessage("§cDieser Spieler ist noch im sicheren Spawnbereich !");
+        }
+    }
+
+    @EventHandler
+    public void onBlockBreak(EntityExplodeEvent e) {
+        var world = e.getEntity().getWorld();
+        if(world.getEnvironment() != World.Environment.NORMAL) return;
+        double distance = e.getLocation().distance(world.getSpawnLocation());
+        if(distance >= 250) return;
+        e.setCancelled(true);
     }
 
 }

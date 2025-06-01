@@ -1,8 +1,8 @@
 name: Breakcraft-Lobby
-version: 1.0
+version: 1.1
 main: de.breakcraft.lobby.LobbyPlugin
 commands:
   serverspawnpoint:
   servernpc:
 depend: [LuckPerms]
-api-version: '1.16'
+api-version: '1.13'

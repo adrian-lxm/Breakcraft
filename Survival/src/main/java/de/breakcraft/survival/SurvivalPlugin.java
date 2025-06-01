@@ -32,7 +32,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         instance = this;
 
         var config = getConfig();
-        if(config.get("mysql.ip") == null) {
+        if(config.get("mysql.host") == null) {
             config.set("mysql.host", "");
             config.set("mysql.port", 3306);
             config.set("mysql.database", "");
@@ -112,10 +112,10 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
                 Score players = objective.getScore("   §e" + playerCount + " §b/ §e100");
                 if(!players.isScoreSet()) {
                     String old = board.getEntries().stream()
-                            .filter(entry -> objective.getScore(entry).getScore() == 5)
+                            .filter(entry -> objective.getScore(entry).getScore() == 8)
                             .findFirst().orElse("");
                     board.resetScores(old);
-                    players.setScore(5);
+                    players.setScore(8);
                     p.setScoreboard(board);
                 }
 

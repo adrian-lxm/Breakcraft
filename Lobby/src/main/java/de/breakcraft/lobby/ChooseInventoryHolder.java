@@ -32,7 +32,7 @@ public class ChooseInventoryHolder implements InventoryHolder {
                 "§anormalen Minecraft Welt",
                 "",
                 "§aAktuelle Minecraft-Version: §e1.21.1",
-                "§cBeitritt nur mit angegebener Version möglich !"
+                "§cBeitritt nur mit mind. 1.21 möglich !"
         );
         meta.setLore(lore);
         grass.setItemMeta(meta);

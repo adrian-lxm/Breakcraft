@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class ChunkClaimListeners implements Listener {
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent e) {
         var claimManager = SurvivalPlugin.getInstance().getClaimManager();
         Player p = e.getPlayer();
@@ -41,7 +41,7 @@ public class ChunkClaimListeners implements Listener {
         if(!p.hasPermission("breakcraft.chunks.others")) e.setCancelled(true);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent e) {
         if(!(e.getDamager() instanceof Player damager && e.getEntity() instanceof Player p)) return;
         var optionalClaim = SurvivalPlugin.getInstance().getClaimManager().getChunkClaim(p.getLocation().getChunk());
@@ -52,7 +52,7 @@ public class ChunkClaimListeners implements Listener {
         if(claim.isTrusted(p.getUniqueId()) || claim.isOwner(p.getUniqueId())) e.setCancelled(true);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(EntityExplodeEvent e) {
         Set<Chunk> chunks = e.blockList().stream()
                 .map(Block::getChunk)

@@ -51,14 +51,6 @@ public class Listeners {
 
     @Subscribe
     public void onServerConnected(ServerConnectedEvent event) {
-        if(event.getPreviousServer().isPresent()) return;
-
-        MiniMessage mm = MiniMessage.miniMessage();
-
-        Component username = Component.text(event.getPlayer().getUsername());
-        TagResolver resolver = TagResolver.resolver("spieler", Tag.inserting(username));
-
-        Component msg = mm.deserialize("<yellow>[<green>+</green>] <spieler> </yellow>", resolver);
 
         server.getScheduler().buildTask(ProxyPlugin.get(), () -> {
             try {
@@ -73,21 +65,12 @@ public class Listeners {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }).delay(750, TimeUnit.MILLISECONDS).schedule();
-
-        for(Player player : server.getAllPlayers())
-            player.sendMessage(msg);
+        }).delay(1, TimeUnit.SECONDS).schedule();
 
     }
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        MiniMessage mm = MiniMessage.miniMessage();
-
-        Component username = Component.text(event.getPlayer().getUsername());
-        TagResolver resolver = TagResolver.resolver("spieler", Tag.inserting(username));
-
-        Component msg = mm.deserialize("<yellow>[<red>-</red>] <spieler> </yellow>", resolver);
         try {
             ByteArrayOutputStream boas = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(boas);
@@ -96,7 +79,6 @@ public class Listeners {
             out.writeInt(server.getPlayerCount());
             for(RegisteredServer registeredServer : server.getAllServers()) {
                 registeredServer.sendPluginMessage(identifier, boas.toByteArray());
-                registeredServer.getPlayersConnected().forEach(player -> player.sendMessage(msg));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

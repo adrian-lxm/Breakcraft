@@ -13,7 +13,7 @@ public class ClaimManager {
 
     public void initManager() {
         try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
-            var statement = con.prepareStatement("SELECT c.*, GROUP_CONCAT(t.uuid) FROM chunkclaim c LEFT JOIN trustedplayer t ON c.id = t.claimId GROUP BY c.id")) {
+            var statement = con.prepareStatement("SELECT c.*, GROUP_CONCAT(t.uuid) FROM chunkclaim c LEFT JOIN trustedplayer t ON c.id = t.claim_id GROUP BY c.id")) {
             createTables(con);
             ResultSet set = statement.executeQuery();
             while (set.next()) {
@@ -38,33 +38,22 @@ public class ClaimManager {
     }
 
     private void createTables(Connection con) throws SQLException {
-        var meta = con.getMetaData();
-        try(ResultSet set = meta.getTables(null, null, "chunkclaim", new String[] {"TABLES"})) {
-            if(!set.next()) {
-                String createSql = "CREATE TABLE chunkclaim" +
-                        "(id INT NOT NULL AUTO_INCREMENT," +
-                        "uuid VARCHAR(36) NOT NULL," +
-                        "world VARCHAR(50) NOT NULL," +
-                        "x INT NOT NULL," +
-                        "z INT NOT NULL," +
-                        "PRIMARY KEY (id))";
-                var stmt = con.createStatement();
-                stmt.execute(createSql);
-                stmt.close();
-            }
-        }
-        try(ResultSet set = meta.getTables(null, null, "trustedplayer", new String[] {"TABLES"})) {
-            if(!set.next()) {
-                String createSql = "CREATE TABLE trustedplayer" +
-                        "(claim_id INT NOT NULL," +
-                        "uuid VARCHAR(36) NOT NULL," +
-                        "FOREIGN KEY (claim_id) REFERENCES chunkclaim(id) ON DELETE CASCADE," +
-                        "PRIMARY KEY (claim_id, uuid))";
-                var stmt = con.createStatement();
-                stmt.execute(createSql);
-                stmt.close();
-            }
-        }
+        String createSql = "CREATE TABLE IF NOT EXISTS chunkclaim" +
+                "(id INT NOT NULL AUTO_INCREMENT," +
+                "uuid VARCHAR(36) NOT NULL," +
+                "world VARCHAR(50) NOT NULL," +
+                "x INT NOT NULL," +
+                "z INT NOT NULL," +
+                "PRIMARY KEY (id))";
+        var stmt = con.createStatement();
+        stmt.execute(createSql);
+        createSql = "CREATE TABLE IF NOT EXISTS trustedplayer" +
+                "(claim_id INT NOT NULL," +
+                "uuid VARCHAR(36) NOT NULL," +
+                "FOREIGN KEY (claim_id) REFERENCES chunkclaim(id) ON DELETE CASCADE," +
+                "PRIMARY KEY (claim_id, uuid))";
+        stmt.execute(createSql);
+        stmt.close();
     }
 
     public Optional<ChunkClaim> getChunkClaim(Chunk chunk) {

@@ -32,7 +32,7 @@ public class ChunkClaim {
     public CompletableFuture<ChunkClaim> saveToDatabase() {
         return CompletableFuture.supplyAsync(() -> {
             try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
-                var statement = con.prepareStatement("INSERT INTO chunkclaim (uuid, world, x, z) values (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                var statement = con.prepareStatement("INSERT INTO chunkclaim (uuid, world, x, z) values (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, owner.toString());
                 statement.setString(2, getWorld());
                 statement.setInt(3, getChunkX());
@@ -85,7 +85,7 @@ public class ChunkClaim {
     public CompletableFuture<Boolean> removeTrusted(UUID id) {
         return CompletableFuture.supplyAsync(() -> {
             try(var con = SurvivalPlugin.getInstance().getDataSource().getConnection();
-                var statement = con.prepareStatement("DELETE FROM trustedplayer WHERE claimID = ? AND uuid = ?")) {
+                var statement = con.prepareStatement("DELETE FROM trustedplayer WHERE claim_id = ? AND uuid = ?")) {
                 statement.setInt(1, this.id);
                 statement.setString(2, id.toString());
                 if(statement.executeUpdate() != 1) return false;

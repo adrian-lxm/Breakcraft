@@ -19,12 +19,12 @@ public class Regeln implements CommandExecutor {
         meta.setAuthor("§aBreakcraft Team");
         meta.setTitle("§5Breakcraft Survival Guide");
         String page1 = """
-                §aEinführung
+                Einführung
                 
                 §aHier hast du eine kleine Kurzfassung zu allen Möglichkeiten hier !
                 """;
         String page2 = """
-                §aRegeln
+                Regeln
                 
                 
                 1. Respekt gegen über jedem
@@ -40,13 +40,13 @@ public class Regeln implements CommandExecutor {
                 5. Keine Beledigungen oder andere Arten der Diskriminierung
                 """;
         String page3 = """
-                §aEinige nützliche Commands
+                Einige nützliche Commands
                 
                 
-                §a1. /pawnshop
+                §e1. /pawnshop
                 Verkaufe Items gegen Ingame Geld
                 
-                §a2. /chunk
+                §e2. /chunk
                 Beanspruche Chunks und baue in Sicherheit
                 """;
         meta.addPage(page1, page2, page3);

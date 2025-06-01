@@ -64,10 +64,9 @@ public class PluginMessagesListener {
                     player.createConnectionRequest(connectServer.get()).connect().thenAcceptAsync(result -> {
                         if(result.isSuccessful()) return;
                         player.sendMessage(Component.text("Verbindung zum Server derzeit nicht möglich !").color(NamedTextColor.RED));
-                        ProxyPlugin.get().getLogger().warning("Player connection could not be established");
                         if (result.getReasonComponent().isPresent()) {
                             TextComponent reason = (TextComponent) result.getReasonComponent().get();
-                            ProxyPlugin.get().getLogger().warning("Reason: " + reason.content());
+                            player.sendMessage(reason.color(NamedTextColor.RED));
                         }
                     });
                 }
