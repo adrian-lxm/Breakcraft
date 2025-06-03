@@ -19,15 +19,6 @@ import org.bukkit.scoreboard.*;
 import java.util.Optional;
 
 public class ServerListener implements Listener {
-    private final Scoreboard prefixManager;
-
-    public ServerListener() {
-        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
-        if(scoreboardManager == null) {
-            throw new RuntimeException("ScoreboardManager is null !");
-        }
-        prefixManager = scoreboardManager.getNewScoreboard();
-    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent e) {
@@ -44,13 +35,15 @@ public class ServerListener implements Listener {
             prefix = group.map(value -> value.getDisplayName().replace('&', '§')).orElse("");
 
             Bukkit.getScheduler().runTask(LobbyPlugin.get(), () -> {
-
-                if(prefixManager.getTeam(user.getPrimaryGroup()) == null) {
-                    prefixManager.registerNewTeam(user.getPrimaryGroup()).setPrefix(" " + prefix + " ");
+                var prefixManager = Bukkit.getScoreboardManager().getMainScoreboard();
+                var prefixTeam = prefixManager.getTeam(user.getPrimaryGroup());
+                if(prefixTeam == null) {
+                    prefixTeam = prefixManager.registerNewTeam(user.getPrimaryGroup());
+                    prefixTeam.setPrefix(prefix + " ");
                 }
-                prefixManager.getTeam(user.getPrimaryGroup()).addEntry(p.getName());
-                p.setPlayerListName(" " + prefix + " " + p.getName());
-                p.setDisplayName(" " + prefix + " " + p.getName());
+                prefixTeam.addEntry(p.getName());
+                p.setPlayerListName(prefix + " " + p.getName());
+                p.setDisplayName(prefix + " " + p.getName());
 
                 ScoreboardManager sbm = Bukkit.getScoreboardManager();
                 Scoreboard board = sbm.getNewScoreboard();
@@ -59,19 +52,19 @@ public class ServerListener implements Listener {
                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
                 Score blank = objective.getScore("  ");
                 blank.setScore(1);
-                Score rank = objective.getScore("   " + prefix);
+                Score rank = objective.getScore(prefix);
                 rank.setScore(2);
                 Score rankDesc = objective.getScore("§bRank:");
                 rankDesc.setScore(3);
                 Score blank3 = objective.getScore(" ");
                 blank3.setScore(4);
-                Score players = objective.getScore("   §e0 §b/ §e100");
+                Score players = objective.getScore("§e0 §b/ §e100");
                 players.setScore(5);
                 Score playersDesc = objective.getScore("§bSpieler:");
                 playersDesc.setScore(6);
                 Score blank4 = objective.getScore("    ");
                 blank4.setScore(7);
-                Score Gamemode = objective.getScore("   §eLobby");
+                Score Gamemode = objective.getScore("§eLobby");
                 Gamemode.setScore(8);
                 Score GamemodeDesc = objective.getScore("§bGamemode:");
                 GamemodeDesc.setScore(9);
@@ -93,7 +86,7 @@ public class ServerListener implements Listener {
         p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         LuckPerms luckPerms = LuckPermsProvider.get();
         User user = luckPerms.getUserManager().getUser(p.getUniqueId());
-        Team team = prefixManager.getTeam(user.getPrimaryGroup());
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(user.getPrimaryGroup());
         if(team != null) team.removeEntry(p.getName());
     }
 

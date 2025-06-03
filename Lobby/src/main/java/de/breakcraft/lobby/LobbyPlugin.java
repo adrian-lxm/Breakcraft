@@ -54,7 +54,7 @@ public class LobbyPlugin extends JavaPlugin implements PluginMessageListener {
             for(Player p : getServer().getOnlinePlayers()) {
                 Scoreboard board = p.getScoreboard();
                 Objective objective = (Objective) board.getObjectives().toArray()[0];
-                Score players = objective.getScore("   §e" + playerCount + " §b/ §e100");
+                Score players = objective.getScore("§e" + playerCount + " §b/ §e100");
                 if(!players.isScoreSet()) {
                     String old = board.getEntries().stream()
                             .filter(entry -> objective.getScore(entry).getScore() == 5)

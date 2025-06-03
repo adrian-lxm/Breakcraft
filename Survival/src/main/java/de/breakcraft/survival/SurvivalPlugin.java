@@ -64,7 +64,6 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
         pm.registerEvents(playerListener, this);
         pm.registerEvents(new InventoryListener(), this);
         pm.registerEvents(new ChunkClaimListeners(), this);
-        pm.registerEvents(new MessageListener(), this);
 
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(
@@ -109,7 +108,7 @@ public class SurvivalPlugin extends JavaPlugin implements PluginMessageListener 
             for(Player p : getServer().getOnlinePlayers()) {
                 Scoreboard board = p.getScoreboard();
                 Objective objective = (Objective) board.getObjectives().toArray()[0];
-                Score players = objective.getScore("   §e" + playerCount + " §b/ §e100");
+                Score players = objective.getScore("§e" + playerCount + " §b/ §e100");
                 if(!players.isScoreSet()) {
                     String old = board.getEntries().stream()
                             .filter(entry -> objective.getScore(entry).getScore() == 8)

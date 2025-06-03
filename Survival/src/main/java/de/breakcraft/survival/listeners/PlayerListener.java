@@ -15,18 +15,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scoreboard.*;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class PlayerListener implements Listener {
-    private Scoreboard prefixManager;
     private final HashMap<UUID, Double> balances = new HashMap<>();
     private WorldBorder safezone;
 
@@ -67,9 +63,6 @@ public class PlayerListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
-        if(prefixManager == null)
-            prefixManager = Bukkit.getScoreboardManager().getNewScoreboard();
-
         LuckPerms luckPerms = LuckPermsProvider.get();
         luckPerms.getUserManager().loadUser(p.getUniqueId()).thenAccept((user -> {
             String prefix;
@@ -78,15 +71,17 @@ public class PlayerListener implements Listener {
 
             Bukkit.getScheduler().runTask(SurvivalPlugin.get(), () -> {
 
-                if(prefixManager.getTeam(user.getPrimaryGroup()) == null) {
-                    prefixManager.registerNewTeam(user.getPrimaryGroup()).setPrefix(" " + prefix + " ");
+                p.setPlayerListName(prefix + " " + p.getName());
+                p.setDisplayName(prefix + " " + p.getName());
+                Scoreboard mainBoard = Bukkit.getScoreboardManager().getMainScoreboard();
+                Team prefixTeam = mainBoard.getTeam(user.getPrimaryGroup());
+                if(prefixTeam == null) {
+                    prefixTeam = mainBoard.registerNewTeam(user.getPrimaryGroup());
+                    prefixTeam.setPrefix(String.format("%s ", prefix));
                 }
-                prefixManager.getTeam(user.getPrimaryGroup()).addEntry(p.getName());
-                p.setPlayerListName(" " + prefix + " " + p.getName());
-                p.setDisplayName(" " + prefix + " " + p.getName());
+                prefixTeam.addEntry(p.getName());
 
-                ScoreboardManager sbm = Bukkit.getScoreboardManager();
-                Scoreboard board = sbm.getNewScoreboard();
+                Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
                 Objective objective = board.registerNewObjective("dummy", "");
                 objective.setDisplayName(ChatColor.DARK_PURPLE + "Breakcraft.de");
                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -94,25 +89,25 @@ public class PlayerListener implements Listener {
                 blank.setScore(1);
                 double money = SurvivalPlugin.get().getEconomy().getBalance(p);
                 balances.put(p.getUniqueId(), money);
-                Score balance = objective.getScore("   §e" + money + " €");
+                Score balance = objective.getScore("§e" + money + " €");
                 balance.setScore(2);
                 Score balanceDesc = objective.getScore("§bKontostand:");
                 balanceDesc.setScore(3);
                 Score blank2 = objective.getScore("  ");
                 blank2.setScore(4);
-                Score rank = objective.getScore("   " + prefix);
+                Score rank = objective.getScore(prefix);
                 rank.setScore(5);
                 Score rankDesc = objective.getScore("§bRank:");
                 rankDesc.setScore(6);
                 Score blank3 = objective.getScore("   ");
                 blank3.setScore(7);
-                Score players = objective.getScore("   §e0 §b/ §e100");
+                Score players = objective.getScore("§e0 §b/ §e100");
                 players.setScore(8);
                 Score playersDesc = objective.getScore("§bSpieler:");
                 playersDesc.setScore(9);
                 Score blank4 = objective.getScore("    ");
                 blank4.setScore(10);
-                Score Gamemode = objective.getScore("   §eSurvival");
+                Score Gamemode = objective.getScore("§eSurvival");
                 Gamemode.setScore(11);
                 Score GamemodeDesc = objective.getScore("§bGamemode:");
                 GamemodeDesc.setScore(12);
@@ -124,10 +119,6 @@ public class PlayerListener implements Listener {
 
         }));
         e.setJoinMessage("§e[§a+§e] " + p.getName());
-        Bukkit.getScheduler().runTaskLater(SurvivalPlugin.get(), () -> {
-            if(safezone.isInside(p.getLocation()))
-                p.setWorldBorder(safezone);
-        }, 40);
     }
 
     @EventHandler
@@ -145,14 +136,14 @@ public class PlayerListener implements Listener {
         e.getPlayer().setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         LuckPerms luckPerms = LuckPermsProvider.get();
         User user = luckPerms.getUserManager().getUser(e.getPlayer().getUniqueId());
-        Team team = prefixManager.getTeam(user.getPrimaryGroup());
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(user.getPrimaryGroup());
         if(team != null) team.removeEntry(e.getPlayer().getName());
         balances.remove(e.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
-        e.setFormat("%s: %s");
+        e.setFormat("%s§f: %s");
     }
 
     @EventHandler

@@ -88,7 +88,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent chatEvent) {
-        chatEvent.setFormat("%s: %s");
+        chatEvent.setFormat("%s§f: %s");
     }
 
     @EventHandler
